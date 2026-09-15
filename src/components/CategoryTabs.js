@@ -1,0 +1,64 @@
+"use client";
+
+import { Smartphone, Monitor, Watch, Camera, Headphones, Gamepad2 } from "lucide-react";
+import { useEffect, useState } from "react";
+
+const categoryDefinitions = [
+  { slug: "phones", icon: Smartphone },
+  { slug: "computers", icon: Monitor },
+  { slug: "smartwatch", icon: Watch },
+  { slug: "camera", icon: Camera },
+  { slug: "headphones", icon: Headphones },
+  { slug: "gaming", icon: Gamepad2 },
+];
+
+export default function CategoryTabs() {
+  const [categories, setCategories] = useState([]);
+  const [active, setActive] = useState("camera");
+
+  useEffect(() => {
+    let activeRequest = true;
+    fetch("/api/categories")
+      .then((response) => response.json())
+      .then((data) => {
+        if (!activeRequest) return;
+        const categoryMap = new Map((data.categories || []).map((category) => [category.slug, category]));
+        setCategories(categoryDefinitions
+          .map((definition) => ({ ...definition, ...categoryMap.get(definition.slug) }))
+          .filter((category) => category.name));
+      })
+      .catch(() => {
+        if (activeRequest) setCategories([]);
+      });
+
+    return () => { activeRequest = false; };
+  }, []);
+
+  return (
+    <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+      {categories.map((category) => {
+        const Icon = category.icon;
+        const isActive = active === category.slug;
+
+        return (
+          <button
+            key={category.slug}
+            type="button"
+            onClick={() => setActive(category.slug)}
+            className={`flex h-[145px] w-full flex-col items-center justify-center gap-4 rounded-md border transition-all duration-300 ${
+              isActive
+                ? "border-[#DB4444] bg-[#DB4444] text-white shadow-sm"
+                : "border-black/30 bg-white text-black hover:border-[#DB4444] hover:bg-[#DB4444] hover:text-white"
+            }`}
+          >
+            {/* Outline Thin Icons */}
+            <Icon className="h-14 w-14 stroke-[1.25]" />
+            <span className="text-base font-normal tracking-wide">
+              {category.name}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
