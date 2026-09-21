@@ -4,15 +4,15 @@ import { ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const categoryDefinitions = [
-  { slug: "women", hasSub: true },
-  { slug: "men", hasSub: true },
-  { slug: "electronics" },
-  { slug: "home" },
-  { slug: "medicine" },
-  { slug: "sports" },
-  { slug: "baby" },
-  { slug: "groceries" },
-  { slug: "beauty" },
+  { slug: "women", name: "Women's Fashion", hasSub: true },
+  { slug: "men", name: "Men's Fashion", hasSub: true },
+  { slug: "electronics", name: "Electronics" },
+  { slug: "home", name: "Home & Lifestyle" },
+  { slug: "medicine", name: "Medicine" },
+  { slug: "sports", name: "Sports & Outdoor" },
+  { slug: "baby", name: "Baby's & Toys" },
+  { slug: "groceries", name: "Groceries & Pets" },
+  { slug: "beauty", name: "Health & Beauty" },
 ];
 
 export default function CategorySidebar({ selectedCategory = "all", onSelectCategory }) {
@@ -27,11 +27,12 @@ export default function CategorySidebar({ selectedCategory = "all", onSelectCate
         const data = await response.json();
         if (!activeRequest) return;
         const categoryMap = new Map((data.categories || []).map((category) => [category.slug, category]));
-        setCategories(categoryDefinitions
-          .map((definition) => ({ ...definition, ...categoryMap.get(definition.slug) }))
-          .filter((category) => category.name));
+        const mergedCategories = categoryDefinitions
+          .map((definition) => ({ ...definition, ...(categoryMap.get(definition.slug) || {}) }))
+          .filter((category) => category.name);
+        setCategories(mergedCategories.length ? mergedCategories : categoryDefinitions);
       } catch {
-        if (activeRequest) setCategories([]);
+        if (activeRequest) setCategories(categoryDefinitions);
       }
     };
 

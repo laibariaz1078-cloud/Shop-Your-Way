@@ -38,6 +38,7 @@ export default function ProductCard({ product, onWishlistChange }) {
   const [isLiked, setIsLiked] = useState(isWishlisted);
   const [isHeartHovered, setIsHeartHovered] = useState(false);
   const [cartMessage, setCartMessage] = useState("");
+  const [cartPending, setCartPending] = useState(false);
   const [wishlistMessage, setWishlistMessage] = useState("");
   const [wishlistPending, setWishlistPending] = useState(false);
   const { refreshCartCount, wishlistIds, toggleWishlistItem, user } = useAppContext();
@@ -83,6 +84,15 @@ export default function ProductCard({ product, onWishlistChange }) {
       setIsLiked(nextState);
       setWishlistMessage(nextState ? "Saved" : "Removed");
       onWishlistChange?.(productIdValue, nextState);
+
+      if (nextState) {
+        await showModal({
+          variant: "success",
+          title: "Saved to wishlist",
+          message: `${name} has been added to your wishlist.`,
+        });
+      }
+
       setTimeout(() => setWishlistMessage(""), 1600);
     } catch (error) {
       setWishlistMessage(error.message || "Unable to update wishlist");
@@ -101,6 +111,9 @@ export default function ProductCard({ product, onWishlistChange }) {
       return;
     }
 
+    setCartPending(true);
+    setCartMessage("Adding...");
+
     try {
       const response = await fetch("/api/cart", {
         method: "POST",
@@ -112,10 +125,17 @@ export default function ProductCard({ product, onWishlistChange }) {
       window.dispatchEvent(new CustomEvent("cart:updated"));
       await refreshCartCount();
       setCartMessage("Added");
+      await showModal({
+        variant: "success",
+        title: "Added to cart",
+        message: `${name} has been added to your cart.`,
+      });
       setTimeout(() => setCartMessage(""), 1800);
     } catch (error) {
       setCartMessage(error.message);
       setTimeout(() => setCartMessage(""), 2500);
+    } finally {
+      setCartPending(false);
     }
   };
 
@@ -183,10 +203,10 @@ export default function ProductCard({ product, onWishlistChange }) {
             <button
               type="button"
               onClick={(e) => handleActionClick(e, addProductToCart)}
-              disabled={isRestrictedBuyerRole}
+              disabled={isRestrictedBuyerRole || cartPending}
               className="absolute inset-x-0 bottom-0 z-20 flex h-9 w-full items-center justify-center bg-black text-xs font-medium text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:opacity-100"
             >
-              {cartMessage || "Add To Cart"}
+              {cartPending ? "Adding..." : cartMessage || "Add To Cart"}
             </button>
           )}
 

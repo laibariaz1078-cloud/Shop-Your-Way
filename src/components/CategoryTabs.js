@@ -5,12 +5,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 const categoryDefinitions = [
-  { slug: "phones", icon: Smartphone },
-  { slug: "computers", icon: Monitor },
-  { slug: "smartwatch", icon: Watch },
-  { slug: "camera", icon: Camera },
-  { slug: "headphones", icon: Headphones },
-  { slug: "gaming", icon: Gamepad2 },
+  { slug: "phones", name: "Phones", icon: Smartphone },
+  { slug: "computers", name: "Computers", icon: Monitor },
+  { slug: "smartwatch", name: "SmartWatch", icon: Watch },
+  { slug: "camera", name: "Camera", icon: Camera },
+  { slug: "headphones", name: "HeadPhones", icon: Headphones },
+  { slug: "gaming", name: "Gaming", icon: Gamepad2 },
 ];
 
 export default function CategoryTabs() {
@@ -27,11 +27,12 @@ export default function CategoryTabs() {
         const data = await response.json();
         if (!activeRequest) return;
         const categoryMap = new Map((data.categories || []).map((category) => [category.slug, category]));
-        setCategories(categoryDefinitions
-          .map((definition) => ({ ...definition, ...categoryMap.get(definition.slug) }))
-          .filter((category) => category.name));
+        const mergedCategories = categoryDefinitions
+          .map((definition) => ({ ...definition, ...(categoryMap.get(definition.slug) || {}) }))
+          .filter((category) => category.name);
+        setCategories(mergedCategories.length ? mergedCategories : categoryDefinitions);
       } catch {
-        if (activeRequest) setCategories([]);
+        if (activeRequest) setCategories(categoryDefinitions);
       }
     };
 

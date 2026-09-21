@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import TopBar from "../../components/TopBar";
 
 import AuthLayout from "../../components/AuthLayout";
+import { hasValidRecaptchaConfig } from "../../lib/recaptcha";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -27,10 +28,11 @@ export default function SignUpPage() {
   );
   const recaptchaSiteKey = recaptchaBypassEnabled
     ? ""
-    : process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+    : process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
+  const recaptchaEnabled = !recaptchaBypassEnabled && hasValidRecaptchaConfig(recaptchaSiteKey);
 
   useEffect(() => {
-    if (recaptchaBypassEnabled || !recaptchaSiteKey || typeof window === "undefined") return;
+    if (recaptchaBypassEnabled || !recaptchaEnabled || typeof window === "undefined") return;
 
     const initRecaptcha = () => {
       if (!recaptchaRef.current || !window.grecaptcha) return;
@@ -92,7 +94,7 @@ export default function SignUpPage() {
       }
       recaptchaWidgetRef.current = null;
     };
-  }, [recaptchaBypassEnabled, recaptchaSiteKey]);
+  }, [recaptchaBypassEnabled, recaptchaEnabled, recaptchaSiteKey]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -105,7 +107,7 @@ export default function SignUpPage() {
     setError("");
 
     try {
-      if (!recaptchaBypassEnabled && recaptchaSiteKey && !captchaToken) {
+      if (!recaptchaBypassEnabled && recaptchaEnabled && !captchaToken) {
         throw new Error("Please complete the reCAPTCHA challenge before creating your account.");
       }
 
@@ -150,7 +152,7 @@ export default function SignUpPage() {
         throw new Error(data.message || data.error || "Signup failed.");
       }
 
-      if (recaptchaSiteKey && window.grecaptcha && recaptchaWidgetRef.current) {
+      if (recaptchaEnabled && window.grecaptcha && recaptchaWidgetRef.current) {
         window.grecaptcha.reset(recaptchaWidgetRef.current);
       }
       setCaptchaToken("");

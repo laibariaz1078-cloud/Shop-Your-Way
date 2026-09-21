@@ -3,6 +3,21 @@ export function shouldBypassRecaptcha() {
   return ["1", "true", "yes", "on"].includes(value);
 }
 
+export function hasValidRecaptchaConfig(value) {
+  const normalized = String(value ?? "").trim();
+
+  if (!normalized) {
+    return false;
+  }
+
+  const lowered = normalized.toLowerCase();
+  if (lowered.includes("your_") || lowered.includes("replace") || lowered.includes("example")) {
+    return false;
+  }
+
+  return /^[A-Za-z0-9_-]{20,}$/.test(normalized);
+}
+
 export async function verifyRecaptchaToken(token) {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
 
@@ -10,7 +25,7 @@ export async function verifyRecaptchaToken(token) {
     return { success: true, skipped: true };
   }
 
-  if (!secretKey) {
+  if (!hasValidRecaptchaConfig(secretKey)) {
     return { success: true, skipped: true };
   }
 

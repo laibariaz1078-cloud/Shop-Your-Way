@@ -7,6 +7,7 @@ import TopBar from "../../components/TopBar";
 
 import AuthLayout from "../../components/AuthLayout";
 import StatusModal from "../../components/StatusModal";
+import { hasValidRecaptchaConfig } from "../../lib/recaptcha";
 
 const EyeIcon = ({ open }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -47,7 +48,8 @@ export default function LoginPage() {
   );
   const recaptchaSiteKey = recaptchaBypassEnabled
     ? ""
-    : process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+    : process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "";
+  const recaptchaEnabled = !recaptchaBypassEnabled && hasValidRecaptchaConfig(recaptchaSiteKey);
 
   // Status modal (shows both error and success messages)
   const [status, setStatus] = useState({ open: false, type: "error", title: "", message: "" });
@@ -62,7 +64,7 @@ export default function LoginPage() {
   const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
-    if (recaptchaBypassEnabled || !recaptchaSiteKey || typeof window === "undefined") return;
+    if (recaptchaBypassEnabled || !recaptchaEnabled || typeof window === "undefined") return;
 
     const initRecaptcha = () => {
       if (!recaptchaRef.current || !window.grecaptcha) return;
@@ -124,7 +126,7 @@ export default function LoginPage() {
       }
       recaptchaWidgetRef.current = null;
     };
-  }, [recaptchaBypassEnabled, recaptchaSiteKey]);
+  }, [recaptchaBypassEnabled, recaptchaEnabled, recaptchaSiteKey]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -136,7 +138,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      if (!recaptchaBypassEnabled && recaptchaSiteKey && !captchaToken) {
+      if (!recaptchaBypassEnabled && recaptchaEnabled && !captchaToken) {
         throw new Error("Please complete the reCAPTCHA challenge before logging in.");
       }
 
@@ -168,7 +170,7 @@ export default function LoginPage() {
         message: "You've logged in successfully. Redirecting you now...",
       });
 
-      if (recaptchaSiteKey && window.grecaptcha && recaptchaWidgetRef.current) {
+      if (recaptchaEnabled && window.grecaptcha && recaptchaWidgetRef.current) {
         window.grecaptcha.reset(recaptchaWidgetRef.current);
       }
       setCaptchaToken("");
