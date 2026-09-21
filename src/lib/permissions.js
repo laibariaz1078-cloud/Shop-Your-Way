@@ -4,6 +4,15 @@ export const ROLE_HOME = {
   customer: "/dashboard/customer",
 };
 
+export function isBuyerRole(role) {
+  return role === "customer" || role === "buyer";
+}
+
+export function getBuyerOnlyMessage(role) {
+  const currentRole = role || "guest";
+  return `Your account role is ${currentRole}. Only buyers can add products to cart, save them to wishlist, or proceed to payment.`;
+}
+
 export function canAccess(role, pathname) {
   if (!role) return false;
 

@@ -93,28 +93,41 @@ export function clearAuthCookie(response) {
 export async function getAuthUser() {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
-  await dbConnect();
+
+  try {
+    await dbConnect();
+  } catch (error) {
+    return null;
+  }
 
   if (token) {
     const decoded = verifyToken(token);
     if (decoded?.id) {
-      const user = await getUsableUser(await User.findById(decoded.id).lean());
-      if (user) return user;
+      try {
+        const user = await getUsableUser(await User.findById(decoded.id).lean());
+        if (user) return user;
+      } catch (error) {
+        return null;
+      }
     }
   }
 
   const sessionToken = cookieStore.get("session_token")?.value;
   if (!sessionToken) return null;
 
-  const session = await Session.findOne({
-    tokenHash: hashToken(sessionToken),
-    isRevoked: false,
-    expiresAt: { $gt: new Date() },
-  }).lean();
-  const user = await getUsableUser(session ? await User.findById(session.userId).lean() : null);
-  if (!user) {
+  try {
+    const session = await Session.findOne({
+      tokenHash: hashToken(sessionToken),
+      isRevoked: false,
+      expiresAt: { $gt: new Date() },
+    }).lean();
+    const user = await getUsableUser(session ? await User.findById(session.userId).lean() : null);
+    if (!user) {
+      return null;
+    }
+
+    return user;
+  } catch (error) {
     return null;
   }
-
-  return user;
 }

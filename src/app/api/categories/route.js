@@ -10,12 +10,14 @@ export async function GET() {
       .sort({ sortOrder: 1, name: 1 })
       .lean();
 
-    return NextResponse.json({ success: true, categories });
-  } catch (error) {
-    console.error("Public categories GET error:", error);
     return NextResponse.json(
-      { success: false, error: "Unable to load categories" },
-      { status: 500 }
+      { success: true, categories },
+      { headers: { "Cache-Control": "no-store, max-age=0" } }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { success: true, categories: [] },
+      { status: 200, headers: { "Cache-Control": "no-store, max-age=0" } }
     );
   }
 }

@@ -8,6 +8,9 @@ export default function CheckoutSuccessPage() {
   const [status, setStatus] = useState("Confirming your payment...");
   const [error, setError] = useState("");
 
+  // window.location.search → "?session_id=cs_test_a1b2c3..." (URL ka query string part)
+  // new URLSearchParams(...) → is string ko parse karke ek object banata hai jisse aap query params easily nikal sakte ho
+  // .get("session_id") → us object se session_id ki value nikal leta hai
   useEffect(() => {
     const sessionId = new URLSearchParams(window.location.search).get("session_id");
     if (!sessionId) {
@@ -23,6 +26,7 @@ export default function CheckoutSuccessPage() {
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || "Unable to confirm payment.");
+        window.dispatchEvent(new CustomEvent("cart:updated"));
         setStatus("Payment successful. Your order has been placed.");
       })
       .catch((completionError) => setError(completionError.message));
@@ -41,7 +45,7 @@ export default function CheckoutSuccessPage() {
         <h1 className="mt-5 text-2xl font-bold text-slate-900">{error ? "Payment confirmation failed" : status.startsWith("Confirming") ? "Please wait" : "Thank you"}</h1>
         <p className="mt-3 text-sm leading-6 text-slate-600">{error || status}</p>
         <div className="mt-6 flex justify-center gap-3">
-          <Link href="/account" className="rounded-lg bg-[#DB4444] px-5 py-2.5 text-sm font-semibold text-white">View orders</Link>
+          <Link href="/dashboard/customer/orders" className="rounded-lg bg-[#DB4444] px-5 py-2.5 text-sm font-semibold text-white">View orders</Link>
           <Link href="/shop" className="rounded-lg border border-slate-300 px-5 py-2.5 text-sm font-semibold text-slate-700">Continue shopping</Link>
         </div>
       </div>

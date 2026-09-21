@@ -2,6 +2,7 @@
 
 import { Smartphone, Monitor, Watch, Camera, Headphones, Gamepad2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 const categoryDefinitions = [
   { slug: "phones", icon: Smartphone },
@@ -15,23 +16,32 @@ const categoryDefinitions = [
 export default function CategoryTabs() {
   const [categories, setCategories] = useState([]);
   const [active, setActive] = useState("camera");
+  const router = useRouter();
 
   useEffect(() => {
     let activeRequest = true;
-    fetch("/api/categories")
-      .then((response) => response.json())
-      .then((data) => {
+    const loadCategories = async () => {
+      try {
+        const response = await fetch("/api/categories", { cache: "no-store" });
+        if (!response.ok) throw new Error("Unable to load categories");
+        const data = await response.json();
         if (!activeRequest) return;
         const categoryMap = new Map((data.categories || []).map((category) => [category.slug, category]));
         setCategories(categoryDefinitions
           .map((definition) => ({ ...definition, ...categoryMap.get(definition.slug) }))
           .filter((category) => category.name));
-      })
-      .catch(() => {
+      } catch {
         if (activeRequest) setCategories([]);
-      });
+      }
+    };
 
-    return () => { activeRequest = false; };
+    loadCategories();
+    const refreshTimer = setInterval(loadCategories, 30_000);
+
+    return () => {
+      activeRequest = false;
+      clearInterval(refreshTimer);
+    };
   }, []);
 
   return (
@@ -44,7 +54,10 @@ export default function CategoryTabs() {
           <button
             key={category.slug}
             type="button"
-            onClick={() => setActive(category.slug)}
+            onClick={() => {
+              setActive(category.slug);
+              router.push(`/shop?category=${encodeURIComponent(category.slug)}`);
+            }}
             className={`flex h-[145px] w-full flex-col items-center justify-center gap-4 rounded-md border transition-all duration-300 ${
               isActive
                 ? "border-[#DB4444] bg-[#DB4444] text-white shadow-sm"

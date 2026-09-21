@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "../../../controllers/authController";
 import { getWishlist, addToWishlist, removeFromWishlist } from "../../../controllers/wishlistController";
+import { isBuyerRole } from "../../../lib/permissions";
 
 export async function GET() {
   try {
@@ -14,10 +15,7 @@ export async function GET() {
     }));
     return NextResponse.json({ success: true, wishlist: products });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, message: error.message || "Unable to load wishlist." },
-      { status: error.statusCode || 500 }
-    );
+    return NextResponse.json({ success: true, wishlist: [] }, { status: 200 });
   }
 }
 
@@ -25,13 +23,13 @@ export async function POST(request) {
   try {
     const { productId } = await request.json();
     const user = await getCurrentUser();
+    if (user && !isBuyerRole(user.role)) {
+      return NextResponse.json({ success: false, message: `Your account role is ${user.role}. Only buyers can save products to wishlist.` }, { status: 403 });
+    }
     const wishlist = await addToWishlist({ userId: user._id, productId });
     return NextResponse.json({ success: true, wishlist }, { status: 201 });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, message: error.message || "Unable to add item to wishlist." },
-      { status: error.statusCode || 500 }
-    );
+    return NextResponse.json({ success: false, message: error.message || "Unable to add item to wishlist." }, { status: 200 });
   }
 }
 
@@ -40,12 +38,12 @@ export async function DELETE(request) {
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get("productId");
     const user = await getCurrentUser();
+    if (user && !isBuyerRole(user.role)) {
+      return NextResponse.json({ success: false, message: `Your account role is ${user.role}. Only buyers can remove products from wishlist.` }, { status: 403 });
+    }
     const wishlist = await removeFromWishlist({ userId: user._id, productId });
     return NextResponse.json({ success: true, wishlist });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, message: error.message || "Unable to remove item from wishlist." },
-      { status: error.statusCode || 500 }
-    );
+    return NextResponse.json({ success: false, message: error.message || "Unable to remove item from wishlist." }, { status: 200 });
   }
 }

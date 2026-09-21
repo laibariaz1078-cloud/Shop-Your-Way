@@ -21,7 +21,6 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error("Me route error:", error);
-    return NextResponse.json({ success: false, user: null }, { status: 500 });
+    return NextResponse.json({ success: false, user: null }, { status: 401 });
   }
 }

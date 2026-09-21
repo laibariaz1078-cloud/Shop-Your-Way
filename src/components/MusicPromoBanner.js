@@ -40,11 +40,11 @@ export default function MusicPromoBanner() {
   }, []);
 
   return (
-    <div className="relative flex  items-center justify-between overflow-hidden rounded-none bg-black px-5 py-10 sm:px-8 sm:py-12 md:flex-row md:px-14 md:py-16 lg:px-20">
+    <div className="relative flex flex-col md:flex-row  items-center justify-between overflow-hidden rounded-none bg-black px-5 py-10 sm:px-8 sm:py-12 md:flex-row md:px-14 md:py-16 lg:px-20">
 
       <div className="pointer-events-none absolute right-4 top-1/2 h-[220px] w-[220px] -translate-y-1/2 rounded-full bg-white/10 blur-[70px] sm:h-[300px] sm:w-[300px] sm:blur-[90px] md:right-16 md:h-[350px] md:w-[350px]" />
 
-      <div className="z-10 flex w-full flex-col items-start gap-5 sm:gap-8 md:w-auto">
+      <div className="z-10 flex order-2 md:order-1 md:text-nowrap w-full flex-col items-start gap-5 sm:gap-8 md:w-auto">
         <span className="text-sm font-semibold text-[#00FF66] sm:text-base">
           Categories
         </span>
@@ -83,7 +83,7 @@ export default function MusicPromoBanner() {
         </Link>
       </div>
 
-      <div className=" relative z-10 mt-8 h-56 w-full max-w-[320px] shrink-0 sm:h-72 sm:max-w-[420px] md:mt-0 md:h-[330px] md:w-[500px] md:max-w-[500px]">
+      <div className=" relative order-1 z-10 mt-8 h-56 w-full max-w-[320px] shrink-0 sm:h-72 sm:max-w-[420px] md:mt-0 md:h-[330px] md:w-[500px] md:max-w-[500px]">
         <Image
           src="/speaker1.png"
           alt="JBL Boombox Speaker"

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import TopBar from "../../components/TopBar";
 
@@ -34,6 +34,7 @@ const EyeIcon = ({ open }) => (
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [form, setForm] = useState({ identifier: "", password: "" });
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -41,7 +42,12 @@ export default function LoginPage() {
   const [captchaToken, setCaptchaToken] = useState("");
   const recaptchaRef = useRef(null);
   const recaptchaWidgetRef = useRef(null);
-  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+  const recaptchaBypassEnabled = ["1", "true", "yes", "on"].includes(
+    String(process.env.NEXT_PUBLIC_RECAPTCHA_DEV_BYPASS ?? "").trim().toLowerCase()
+  );
+  const recaptchaSiteKey = recaptchaBypassEnabled
+    ? ""
+    : process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
 
   // Status modal (shows both error and success messages)
   const [status, setStatus] = useState({ open: false, type: "error", title: "", message: "" });
@@ -56,7 +62,7 @@ export default function LoginPage() {
   const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
-    if (!recaptchaSiteKey || typeof window === "undefined") return;
+    if (recaptchaBypassEnabled || !recaptchaSiteKey || typeof window === "undefined") return;
 
     const initRecaptcha = () => {
       if (!recaptchaRef.current || !window.grecaptcha) return;
@@ -72,9 +78,7 @@ export default function LoginPage() {
         return;
       }
 
-      if (recaptchaWidgetRef.current) {
-        window.grecaptcha.reset(recaptchaWidgetRef.current);
-        setCaptchaToken("");
+      if (recaptchaWidgetRef.current !== null && recaptchaWidgetRef.current !== undefined) {
         return;
       }
 
@@ -109,7 +113,18 @@ export default function LoginPage() {
     script.defer = true;
     script.onload = initRecaptcha;
     document.body.appendChild(script);
-  }, [recaptchaSiteKey]);
+
+    return () => {
+      if (recaptchaWidgetRef.current && window.grecaptcha) {
+        try {
+          window.grecaptcha.reset(recaptchaWidgetRef.current);
+        } catch {
+          // ignore reset errors during teardown
+        }
+      }
+      recaptchaWidgetRef.current = null;
+    };
+  }, [recaptchaBypassEnabled, recaptchaSiteKey]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -121,7 +136,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      if (recaptchaSiteKey && !captchaToken) {
+      if (!recaptchaBypassEnabled && recaptchaSiteKey && !captchaToken) {
         throw new Error("Please complete the reCAPTCHA challenge before logging in.");
       }
 
@@ -143,8 +158,8 @@ export default function LoginPage() {
         admin: "/dashboard/admin",
         seller: "/dashboard/seller",
         vendor: "/dashboard/vendor",
-        customer: "/dashboard/customer",
-      }[role] || "/dashboard/customer";
+        customer: "/",
+      }[role] || "/";
 
       setStatus({
         open: true,
@@ -159,7 +174,10 @@ export default function LoginPage() {
       setCaptchaToken("");
 
       setTimeout(() => {
-        router.push(homeRoute);
+        const returnTo = searchParams.get("returnTo");
+        const destination = returnTo && returnTo.startsWith("/") ? returnTo : homeRoute;
+        window.dispatchEvent(new CustomEvent("auth:updated"));
+        router.push(destination);
         router.refresh();
       }, 1200);
     } catch (err) {

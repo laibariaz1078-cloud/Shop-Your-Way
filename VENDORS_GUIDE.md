@@ -1,8 +1,4 @@
-# Vendors Complete Flow & Setup
 
-## 📊 موجودہ Setup
-
-### ✅ جو کچھ ہے:
 
 1. **Vendor Model** (`src/models/Vendor.js`)
    - name (ضروری)
@@ -165,7 +161,7 @@ Product
 
 ---
 
-## 📁 فائلیں:
+## 📁 Files
 
 - Model: `src/models/Vendor.js`
 - APIs: `src/app/api/dashboard/admin/vendors/*`

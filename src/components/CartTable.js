@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { X, ChevronUp, ChevronDown } from "lucide-react";
-import { getProductImage } from "../lib/productImage";
 
 export default function CartTable({ items = [], onRemoveItem, onUpdateQuantity }) {
   const [quantities, setQuantities] = useState(Object.fromEntries(items.map((item) => [item.id, item.quantity])));
@@ -46,7 +45,7 @@ export default function CartTable({ items = [], onRemoveItem, onUpdateQuantity }
                   <X className="h-3 w-3" />
                 </button>
                 <Image
-                  src={getProductImage(item)}
+                  src={item.image}
                   alt={item.name}
                   width={48}
                   height={48}

@@ -11,6 +11,7 @@ import CategoryTabs from "../components/CategoryTabs";
 import MusicPromoBanner from "../components/MusicPromoBanner";
 import NewArrivalGrid from "../components/NewArrivalGrid";
 import FeaturesStrip from "../components/FeaturesStrip";
+import { flashSaleProducts, bestSellingProducts, exploreProducts } from "./home-data";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
@@ -70,13 +71,36 @@ function ViewAllButton({ href, children }) {
 export default function HomePage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [products, setProducts] = useState([]);
+  const fallbackProducts = useMemo(
+    () => [
+      ...flashSaleProducts.map((product) => ({ ...product, collection: "flashSale" })),
+      ...bestSellingProducts.map((product) => ({ ...product, collection: "bestSelling" })),
+      ...exploreProducts.map((product) => ({ ...product, collection: "explore" })),
+    ],
+    []
+  );
+  const [products, setProducts] = useState(fallbackProducts);
 
   useEffect(() => {
+    let isCurrent = true;
+
     fetch("/api/products?limit=100")
-      .then((response) => response.json())
-      .then((data) => setProducts(data.success ? data.products : []))
-      .catch(() => setProducts([]));
+      .then((response) => {
+        if (!response.ok) throw new Error("Unable to load products");
+        return response.json();
+      })
+      .then((data) => {
+        if (isCurrent && data.success && data.products.length > 0) {
+          setProducts(data.products);
+        }
+      })
+      .catch(() => {
+        // Keep the local catalog visible if the database is temporarily unavailable.
+      });
+
+    return () => {
+      isCurrent = false;
+    };
   }, []);
 
   const [timeLeft, setTimeLeft] = useState({

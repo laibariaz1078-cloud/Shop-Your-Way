@@ -1,9 +1,11 @@
 "use client";
 
 import { Star, Heart, Truck, RotateCcw } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { showModal } from "../lib/modal";
+import { useAppContext } from "../context/AppContext";
+import { getBuyerOnlyMessage, isBuyerRole } from "../lib/permissions";
 
 export default function ProductInfo({
   name = "Havic HV G-92 Gamepad",
@@ -18,15 +20,28 @@ export default function ProductInfo({
   productId,
 }) {
   const router = useRouter();
+  const { wishlistIds, toggleWishlistItem, user } = useAppContext();
+  const isRestrictedBuyerRole = !!user && !isBuyerRole(user.role);
   const [selectedColor, setSelectedColor] = useState(colors[0]);
   const [selectedSize, setSelectedSize] = useState("M");
   const [quantity, setQuantity] = useState(2);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [buying, setBuying] = useState(false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const contextWishlisted = productId ? wishlistIds.includes(String(productId)) : false;
+  const isWishlistedState = contextWishlisted || isWishlisted;
 
   const handleBuyNow = async () => {
     if (!productId || buying) return;
+
+    if (user && !isBuyerRole(user.role)) {
+      await showModal({
+        title: "Buyer access required",
+        message: getBuyerOnlyMessage(user.role),
+      });
+      return;
+    }
+
     setBuying(true);
     try {
       const response = await fetch("/api/cart", {
@@ -48,21 +63,22 @@ export default function ProductInfo({
   const handleWishlistToggle = async () => {
     if (!productId || wishlistLoading) return;
 
+    if (user && !isBuyerRole(user.role)) {
+      await showModal({
+        title: "Buyer access required",
+        message: getBuyerOnlyMessage(user.role),
+      });
+      return;
+    }
+
     setWishlistLoading(true);
     try {
-      const response = await fetch("/api/wishlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ productId }),
+      const nextState = await toggleWishlistItem({
+        productId: String(productId),
+        isCurrentlyWishlisted: isWishlistedState,
       });
-      const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.message || "Unable to add to wishlist");
-      }
-
-      setIsWishlisted(true);
+      setIsWishlisted(nextState);
     } catch (error) {
       await showModal({
         title: "Unable to save wishlist",
@@ -164,8 +180,8 @@ export default function ProductInfo({
         <button
           type="button"
           onClick={handleBuyNow}
-          disabled={!inStock}
-          className="h-10 flex-1 rounded bg-[#DB4444] text-sm font-medium text-white transition-colors hover:bg-[#c33b3b] disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!inStock || isRestrictedBuyerRole}
+          className="h-10 flex-1 rounded bg-[#DB4444] text-sm font-medium text-white transition-colors hover:bg-[#c33b3b] disabled:cursor-not-allowed disabled:bg-slate-400 disabled:opacity-80"
         >
           {buying ? "Adding..." : "Buy Now"}
         </button>
@@ -174,14 +190,14 @@ export default function ProductInfo({
           type="button"
           aria-label="Add to wishlist"
           onClick={handleWishlistToggle}
-          disabled={wishlistLoading}
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded border transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-            isWishlisted
+          disabled={wishlistLoading || isRestrictedBuyerRole}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+            isWishlistedState
               ? "border-[#DB4444] text-[#DB4444]"
               : "border-black/50 hover:border-[#DB4444] hover:text-[#DB4444]"
           }`}
         >
-          <Heart className="h-5 w-5" fill={isWishlisted ? "#DB4444" : "none"} />
+          <Heart className="h-5 w-5" fill={isWishlistedState ? "#DB4444" : "none"} />
         </button>
       </div>
 

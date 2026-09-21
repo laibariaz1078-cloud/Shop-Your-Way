@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import TopBar from "../../components/TopBar";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
@@ -8,10 +9,13 @@ import Breadcrumb from "../../components/Breadcrumb";
 import CartTable from "../../components/CartTable";
 import CartTotal from "../../components/CartTotal";
 import { getProductImage } from "../../lib/productImage";
+import { getBuyerOnlyMessage, isBuyerRole } from "../../lib/permissions";
+import { showModal } from "../../lib/modal";
 
 export default function CartPage() {
   const [cart, setCart] = useState(null);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const loadCart = async () => {
     const response = await fetch("/api/cart");
@@ -21,15 +25,40 @@ export default function CartPage() {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => loadCart().catch((loadError) => setError(loadError.message)), 0);
+    const timer = setTimeout(async () => {
+      try {
+        const authResponse = await fetch("/api/auth/me", { credentials: "include" });
+        const authData = await authResponse.json();
+
+        if (!authResponse.ok || !authData?.success || !authData.user) {
+          router.replace(`/login?returnTo=${encodeURIComponent("/cart")}`);
+          return;
+        }
+
+        if (!isBuyerRole(authData.user.role)) {
+          await showModal({
+            title: "Buyer access required",
+            message: getBuyerOnlyMessage(authData.user.role),
+          });
+          router.replace(authData.user.role === "admin" ? "/dashboard/admin" : authData.user.role === "seller" ? "/dashboard/seller" : "/");
+          return;
+        }
+
+        await loadCart();
+      } catch (loadError) {
+        setError(loadError.message || "Unable to load cart");
+      }
+    }, 0);
+
     return () => clearTimeout(timer);
-  }, []);
+  }, [router]);
 
   const updateQuantity = async (id, quantity) => {
     const response = await fetch("/api/cart", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ productId: id, quantity }) });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Unable to update quantity");
     setCart(data.cart);
+    window.dispatchEvent(new CustomEvent("cart:updated"));
   };
 
   const removeItem = async (id) => {
@@ -37,6 +66,7 @@ export default function CartPage() {
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Unable to remove item");
     setCart(data.cart);
+    window.dispatchEvent(new CustomEvent("cart:updated"));
   };
 
   const cartItems = (cart?.items || []).map((item) => ({

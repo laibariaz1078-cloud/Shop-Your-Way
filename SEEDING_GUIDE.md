@@ -14,7 +14,7 @@ mongod
 ### Step 2: Run the seed script
 ```bash
 cd d:/Ecommerce/my-app
-$env:MONGODB_URI='mongodb://127.0.0.1:27017/my-app'
+$env:MONGODB_URI=""
 node --loader tsx seed.js
 ```
 
@@ -66,8 +66,7 @@ After seeding, you'll have the following test accounts:
 ## Signup with Role Selection
 
 You can also create new accounts during signup:
-
-1. Go to `http://localhost:3000/signup`
+SignUp page
 2. Fill in your details
 3. Select your role:
    - **Buyer** - For purchasing products
@@ -78,11 +77,3 @@ The system automatically assigns the correct role and creates the appropriate da
 
 ---
 
-## Dashboard Access
-
-After logging in, you'll be redirected to your dashboard:
-- **Buyers** → `/dashboard/customer`
-- **Sellers** → `/dashboard/seller`
-- **Admins** → `/dashboard/admin`
-
-Each dashboard shows role-specific data and features.

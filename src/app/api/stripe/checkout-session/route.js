@@ -53,6 +53,7 @@ export async function POST(request) {
       customer_email: billingDetails.email.trim(),
       metadata: {
         userId: user._id.toString(),
+        userEmail: user.email,
         billingDetails: JSON.stringify(billingDetails).slice(0, 500),
       },
       success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,

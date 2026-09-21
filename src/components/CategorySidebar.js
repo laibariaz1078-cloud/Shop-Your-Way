@@ -20,20 +20,28 @@ export default function CategorySidebar({ selectedCategory = "all", onSelectCate
 
   useEffect(() => {
     let activeRequest = true;
-    fetch("/api/categories")
-      .then((response) => response.json())
-      .then((data) => {
+    const loadCategories = async () => {
+      try {
+        const response = await fetch("/api/categories", { cache: "no-store" });
+        if (!response.ok) throw new Error("Unable to load categories");
+        const data = await response.json();
         if (!activeRequest) return;
         const categoryMap = new Map((data.categories || []).map((category) => [category.slug, category]));
         setCategories(categoryDefinitions
           .map((definition) => ({ ...definition, ...categoryMap.get(definition.slug) }))
           .filter((category) => category.name));
-      })
-      .catch(() => {
+      } catch {
         if (activeRequest) setCategories([]);
-      });
+      }
+    };
 
-    return () => { activeRequest = false; };
+    loadCategories();
+    const refreshTimer = setInterval(loadCategories, 30_000);
+
+    return () => {
+      activeRequest = false;
+      clearInterval(refreshTimer);
+    };
   }, []);
 
   return (

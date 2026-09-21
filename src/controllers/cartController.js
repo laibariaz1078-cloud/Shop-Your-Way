@@ -100,11 +100,13 @@ export async function updateCartItem({ userId, sessionId, productId, quantity })
   if (difference > 0) await reserveStock(productId, difference);
   if (difference < 0) await releaseStock(productId, Math.abs(difference));
 
-  return Cart.findOneAndUpdate(
+  const updatedCart = await Cart.findOneAndUpdate(
     { ...filter, "items.productId": productId },
     { $set: { "items.$.quantity": requestedQuantity } },
     { new: true }
   );
+
+  return updatedCart.populate("items.productId", "name basePrice images sellerId");
 }
 
 export async function removeFromCart({ userId, sessionId, productId }) {
@@ -115,9 +117,11 @@ export async function removeFromCart({ userId, sessionId, productId }) {
   const item = cart?.items.find((cartItem) => cartItem.productId.toString() === productId.toString());
   if (item) await releaseStock(productId, item.quantity);
 
-  return Cart.findOneAndUpdate(
+  const updatedCart = await Cart.findOneAndUpdate(
     filter,
     { $pull: { items: { productId } } },
     { new: true }
   );
+
+  return updatedCart?.populate("items.productId", "name basePrice images sellerId");
 }

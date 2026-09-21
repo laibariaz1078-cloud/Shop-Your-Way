@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/my-app";
+const MONGODB_URI = process.env.MONGODB_URI?.trim();
 
 let cached = globalThis.__mongoose;
 
@@ -9,10 +9,17 @@ if (!cached) {
 }
 
 export async function connectToDatabase() {
+  if (!MONGODB_URI) {
+    throw new Error("MONGODB_URI is required. Add your Atlas connection string to the .env file.");
+  }
+
   if (cached.connection) return cached.connection;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI, { bufferCommands: false }).catch((error) => {
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 5000,
+    }).catch((error) => {
       cached.promise = null;
       throw error;
     });

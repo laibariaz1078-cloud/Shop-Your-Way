@@ -1,7 +1,7 @@
 import TopBar from "../../../components/TopBar";
 import Navbar from "../../../components/Navbar";
 import Footer from "../../../components/Footer";
-import AccountSidebar from "../../../components/AccountSidebar";
+import AccountSidebar from "../AccountSidebar";
 import CustomerOrdersTable from "../../../components/dashboard/CustomerOrdersTable";
 
 export default function AccountOrdersPage() {

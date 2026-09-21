@@ -10,6 +10,41 @@ import SectionHeader from "../../components/SectionHeader";
 import ProductCard from "../../components/ProductCard";
 import CategorySidebar from "../../components/CategorySidebar";
 
+const fallbackProductsByCategory = {
+  phones: [
+    { id: "fallback-phone-1", name: "Nova Pro Smartphone", image: "/6.png", price: 799, rating: 5, reviewCount: 42 },
+    { id: "fallback-phone-2", name: "Everyday 5G Phone", image: "/7.png", price: 499, rating: 4, reviewCount: 28 },
+  ],
+  computers: [
+    { id: "fallback-computer-1", name: "UltraView Desktop Monitor", image: "/4.png", price: 370, rating: 5, reviewCount: 36 },
+    { id: "fallback-computer-2", name: "Performance Work Laptop", image: "/7.png", price: 1200, rating: 5, reviewCount: 51 },
+  ],
+  smartwatch: [
+    { id: "fallback-watch-1", name: "Active Fit SmartWatch", image: "/8.png", price: 229, rating: 4, reviewCount: 31 },
+    { id: "fallback-watch-2", name: "Classic Health Watch", image: "/9.png", price: 179, rating: 4, reviewCount: 24 },
+  ],
+  camera: [
+    { id: "fallback-camera-1", name: "CANON EOS DSLR Camera", image: "/6.png", price: 360, rating: 5, reviewCount: 95 },
+    { id: "fallback-camera-2", name: "Pocket Creator Camera", image: "/5.png", price: 289, rating: 4, reviewCount: 19 },
+  ],
+  headphones: [
+    { id: "fallback-headphones-1", name: "Noise Cancel Headphones", image: "/11.png", price: 149, rating: 5, reviewCount: 63 },
+    { id: "fallback-headphones-2", name: "Studio Wireless Headset", image: "/13.png", price: 119, rating: 4, reviewCount: 38 },
+  ],
+  gaming: [
+    { id: "fallback-gaming-1", name: "GP11 Shooter USB Gamepad", image: "/11.png", price: 660, rating: 5, reviewCount: 55 },
+    { id: "fallback-gaming-2", name: "Gaming Setup Essentials", image: "/13.png", price: 899, rating: 5, reviewCount: 47 },
+  ],
+};
+
+const fallbackCatalog = Object.entries(fallbackProductsByCategory)
+  .flatMap(([category, categoryProducts]) => categoryProducts.map((product) => ({
+    ...product,
+    category,
+    addToCartVisible: false,
+    collection: "explore",
+  })));
+
 const matchesFilters = (product, selectedCategory, searchTerm) => {
   const normalizedCategory = selectedCategory || "all";
   const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -28,11 +63,18 @@ export default function ShopPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
+    const categoryFromUrl = new URLSearchParams(window.location.search).get("category");
+    const categorySync = setTimeout(() => {
+      setSelectedCategory(categoryFromUrl || "all");
+    }, 0);
+
     fetch("/api/products?limit=100")
       .then((response) => response.json())
       .then((data) => setProducts(data.success ? data.products : []))
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
+
+    return () => clearTimeout(categorySync);
   }, []);
 
   const filteredFlashSale = useMemo(
@@ -50,7 +92,14 @@ export default function ShopPage() {
     [products, selectedCategory, searchTerm]
   );
 
-  const totalCount = filteredFlashSale.length + filteredBestSelling.length + filteredExplore.length;
+  const filteredFallback = useMemo(
+    () => fallbackCatalog.filter((product) => matchesFilters(product, selectedCategory, searchTerm)),
+    [selectedCategory, searchTerm]
+  );
+
+  const displayedExplore = filteredExplore.length > 0 ? filteredExplore : filteredFallback;
+
+  const totalCount = filteredFlashSale.length + filteredBestSelling.length + displayedExplore.length;
   const hasAnyProducts = totalCount > 0;
 
   const gridColsClass = sidebarOpen
@@ -108,7 +157,7 @@ export default function ShopPage() {
             {loading && (
               <div className={`grid gap-6 ${gridColsClass}`}>
                 {Array.from({ length: 8 }).map((_, index) => (
-                  <div key={index} className="aspect-[3/4] animate-pulse rounded bg-gray-100" />
+                  <div key={index} className="aspect-3/4 animate-pulse rounded bg-gray-100" />
                 ))}
               </div>
             )}
@@ -144,11 +193,11 @@ export default function ShopPage() {
               </section>
             )}
 
-            {!loading && filteredExplore.length > 0 && (
+            {!loading && displayedExplore.length > 0 && (
               <section className="flex flex-col gap-8">
-                <SectionHeader eyebrow="Browse" title="All Products" showViewAll />
+                <SectionHeader eyebrow="Browse" title={selectedCategory === "all" ? "All Products" : "Related Products"} showViewAll />
                 <div className={`grid gap-x-6 gap-y-10 ${gridColsClass}`}>
-                  {filteredExplore.map((product) => (
+                  {displayedExplore.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>

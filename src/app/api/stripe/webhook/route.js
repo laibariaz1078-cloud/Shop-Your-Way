@@ -42,28 +42,40 @@ export async function POST(request) {
 
     const billingDetails = JSON.parse(session.metadata.billingDetails || "{}");
     const customerName = `${user.firstName} ${user.lastName || ""}`.trim();
-    const order = await createOrderFromCart({
-      userId: user._id,
-      customerName,
-      shippingAddress: billingDetails,
-      billingAddress: billingDetails,
-      payment: { method: "card", provider: "stripe", paymentIntentId, status: "captured", currency: session.currency, amount: (session.amount_total || 0) / 100 },
-      status: "Paid",
-    });
+    let order = await Order.findOne({ "payment.paymentIntentId": paymentIntentId }).lean();
 
-    await Payment.create({
-      orderId: order._id,
-      userId: user._id,
-      paymentIntentId,
-      transactionId: session.id,
-      method: "card",
-      provider: "stripe",
-      amount: (session.amount_total || 0) / 100,
-      currency: session.currency || "usd",
-      status: "captured",
-      capturedAt: new Date(),
-      providerResponse: { checkoutSessionId: session.id },
-    });
+    if (!order) {
+      order = await createOrderFromCart({
+        userId: user._id,
+        customerName,
+        shippingAddress: billingDetails,
+        billingAddress: billingDetails,
+        payment: { method: "card", provider: "stripe", paymentIntentId, status: "captured", currency: session.currency, amount: (session.amount_total || 0) / 100 },
+        status: "Paid",
+      });
+    }
+
+    if (paymentIntentId) {
+      await Payment.findOneAndUpdate(
+        { paymentIntentId },
+        {
+          $setOnInsert: {
+            orderId: order._id,
+            userId: user._id,
+            paymentIntentId,
+            transactionId: session.id,
+            method: "card",
+            provider: "stripe",
+            amount: (session.amount_total || 0) / 100,
+            currency: session.currency || "usd",
+            status: "captured",
+            capturedAt: new Date(),
+            providerResponse: { checkoutSessionId: session.id },
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    }
 
     return NextResponse.json({ received: true });
   } catch (error) {

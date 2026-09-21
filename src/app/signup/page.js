@@ -22,10 +22,15 @@ export default function SignUpPage() {
   const [captchaToken, setCaptchaToken] = useState("");
   const recaptchaRef = useRef(null);
   const recaptchaWidgetRef = useRef(null);
-  const recaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+  const recaptchaBypassEnabled = ["1", "true", "yes", "on"].includes(
+    String(process.env.NEXT_PUBLIC_RECAPTCHA_DEV_BYPASS ?? "").trim().toLowerCase()
+  );
+  const recaptchaSiteKey = recaptchaBypassEnabled
+    ? ""
+    : process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
 
   useEffect(() => {
-    if (!recaptchaSiteKey || typeof window === "undefined") return;
+    if (recaptchaBypassEnabled || !recaptchaSiteKey || typeof window === "undefined") return;
 
     const initRecaptcha = () => {
       if (!recaptchaRef.current || !window.grecaptcha) return;
@@ -41,9 +46,7 @@ export default function SignUpPage() {
         return;
       }
 
-      if (recaptchaWidgetRef.current) {
-        window.grecaptcha.reset(recaptchaWidgetRef.current);
-        setCaptchaToken("");
+      if (recaptchaWidgetRef.current !== null && recaptchaWidgetRef.current !== undefined) {
         return;
       }
 
@@ -78,7 +81,18 @@ export default function SignUpPage() {
     script.defer = true;
     script.onload = initRecaptcha;
     document.body.appendChild(script);
-  }, [recaptchaSiteKey]);
+
+    return () => {
+      if (recaptchaWidgetRef.current && window.grecaptcha) {
+        try {
+          window.grecaptcha.reset(recaptchaWidgetRef.current);
+        } catch {
+          // ignore reset errors during teardown
+        }
+      }
+      recaptchaWidgetRef.current = null;
+    };
+  }, [recaptchaBypassEnabled, recaptchaSiteKey]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -91,7 +105,7 @@ export default function SignUpPage() {
     setError("");
 
     try {
-      if (recaptchaSiteKey && !captchaToken) {
+      if (!recaptchaBypassEnabled && recaptchaSiteKey && !captchaToken) {
         throw new Error("Please complete the reCAPTCHA challenge before creating your account.");
       }
 
@@ -141,7 +155,8 @@ export default function SignUpPage() {
       }
       setCaptchaToken("");
 
-      router.push(role === "seller" ? "/dashboard/seller" : "/dashboard/customer");
+      window.dispatchEvent(new CustomEvent("auth:updated"));
+      router.push(role === "seller" ? "/dashboard/seller" : "/");
       router.refresh();
     } catch (err) {
       setError(err.message || "Something went wrong.");

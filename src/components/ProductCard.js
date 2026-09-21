@@ -2,9 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Heart, Eye, Star } from "lucide-react";
 import { getProductImage } from "../lib/productImage";
+import { useAppContext } from "../context/AppContext";
+import { isBuyerRole, getBuyerOnlyMessage } from "../lib/permissions";
+import { showModal } from "../lib/modal";
 
 const makeSlug = (value) =>
   String(value || "product")
@@ -37,6 +40,11 @@ export default function ProductCard({ product, onWishlistChange }) {
   const [cartMessage, setCartMessage] = useState("");
   const [wishlistMessage, setWishlistMessage] = useState("");
   const [wishlistPending, setWishlistPending] = useState(false);
+  const { refreshCartCount, wishlistIds, toggleWishlistItem, user } = useAppContext();
+  const productIdValue = String(productId || "");
+  const contextWishlisted = productIdValue ? wishlistIds.includes(productIdValue) : false;
+  const isLikedState = contextWishlisted || isLiked;
+  const isRestrictedBuyerRole = !!user && !isBuyerRole(user.role);
 
   const productSlug = slug || makeSlug(name);
   const image = getProductImage({ ...product, image: productImage, images });
@@ -55,33 +63,26 @@ export default function ProductCard({ product, onWishlistChange }) {
   };
 
   const handleWishlistToggle = async () => {
-    if (!productId || wishlistPending) return;
+    if (!productIdValue || wishlistPending) return;
+
+    if (user && !isBuyerRole(user.role)) {
+      await showModal({
+        title: "Buyer access required",
+        message: getBuyerOnlyMessage(user.role),
+      });
+      return;
+    }
 
     setWishlistPending(true);
     try {
-      if (isLiked) {
-        const response = await fetch(`/api/wishlist?productId=${productId}`, {
-          method: "DELETE",
-          credentials: "include",
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "Unable to remove from wishlist");
-        setIsLiked(false);
-        setWishlistMessage("Removed");
-        onWishlistChange?.(productId, false);
-      } else {
-        const response = await fetch("/api/wishlist", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ productId }),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "Unable to add to wishlist");
-        setIsLiked(true);
-        setWishlistMessage("Saved");
-        onWishlistChange?.(productId, true);
-      }
+      const nextState = await toggleWishlistItem({
+        productId: productIdValue,
+        isCurrentlyWishlisted: isLiked,
+      });
+
+      setIsLiked(nextState);
+      setWishlistMessage(nextState ? "Saved" : "Removed");
+      onWishlistChange?.(productIdValue, nextState);
       setTimeout(() => setWishlistMessage(""), 1600);
     } catch (error) {
       setWishlistMessage(error.message || "Unable to update wishlist");
@@ -92,6 +93,14 @@ export default function ProductCard({ product, onWishlistChange }) {
   };
 
   const addProductToCart = async () => {
+    if (user && !isBuyerRole(user.role)) {
+      await showModal({
+        title: "Buyer access required",
+        message: getBuyerOnlyMessage(user.role),
+      });
+      return;
+    }
+
     try {
       const response = await fetch("/api/cart", {
         method: "POST",
@@ -101,6 +110,7 @@ export default function ProductCard({ product, onWishlistChange }) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Unable to add to cart");
       window.dispatchEvent(new CustomEvent("cart:updated"));
+      await refreshCartCount();
       setCartMessage("Added");
       setTimeout(() => setCartMessage(""), 1800);
     } catch (error) {
@@ -130,19 +140,19 @@ export default function ProductCard({ product, onWishlistChange }) {
             <button
               type="button"
               aria-label="Add to wishlist"
-              disabled={wishlistPending}
+              disabled={wishlistPending || isRestrictedBuyerRole}
               onClick={(e) => handleActionClick(e, handleWishlistToggle)}
               onMouseEnter={() => setIsHeartHovered(true)}
               onMouseLeave={() => setIsHeartHovered(false)}
-              className={`flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white transition-all duration-200 hover:bg-[#DB4444] disabled:opacity-60 ${
-                isLiked ? "text-[#DB4444]" : "text-black"
+              className={`flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white transition-all duration-200 hover:bg-[#DB4444] disabled:cursor-not-allowed disabled:opacity-40 ${
+                isLikedState ? "text-[#DB4444]" : "text-black"
               }`}
             >
               <Heart
                 className={`h-4 w-4 ${
                   isHeartHovered
                     ? "fill-current text-white"
-                    : isLiked
+                    : isLikedState
                     ? "fill-[#DB4444] text-[#DB4444]"
                     : "text-black"
                 }`}
@@ -173,7 +183,8 @@ export default function ProductCard({ product, onWishlistChange }) {
             <button
               type="button"
               onClick={(e) => handleActionClick(e, addProductToCart)}
-              className="absolute inset-x-0 bottom-0 z-20 flex h-9 w-full items-center justify-center bg-black text-xs font-medium text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              disabled={isRestrictedBuyerRole}
+              className="absolute inset-x-0 bottom-0 z-20 flex h-9 w-full items-center justify-center bg-black text-xs font-medium text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:opacity-100"
             >
               {cartMessage || "Add To Cart"}
             </button>

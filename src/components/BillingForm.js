@@ -7,7 +7,7 @@ export default function BillingForm({ values, onChange }) {
 
   const fields = [
     { label: "First Name", name: "firstName", required: true, type: "text" },
-    { label: "Company Name", name: "companyName", required: false, type: "text" },
+    { label: "Last Name", name: "lastName", required: true, type: "text" },
     { label: "Street Address", name: "streetAddress", required: true, type: "text" },
     { label: "Apartment, floor, etc. (optional)", name: "apartment", required: false, type: "text" },
     { label: "Town/City", name: "city", required: true, type: "text" },

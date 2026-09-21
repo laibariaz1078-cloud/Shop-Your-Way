@@ -1,5 +1,14 @@
+export function shouldBypassRecaptcha() {
+  const value = String(process.env.RECAPTCHA_DEV_BYPASS ?? "").trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(value);
+}
+
 export async function verifyRecaptchaToken(token) {
   const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+
+  if (shouldBypassRecaptcha()) {
+    return { success: true, skipped: true };
+  }
 
   if (!secretKey) {
     return { success: true, skipped: true };

@@ -1,40 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useAppContext } from "../../context/AppContext";
 import TopBar from "../../components/TopBar";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
-import AccountSidebar from "../../components/AccountSidebar";
-import ProfileForm from "../../components/ProfileForm";
+import AccountSidebar from "./AccountSidebar";
+import AccountProfileForm from "./AccountProfileForm";
 
 export default function AccountPage() {
-  const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchSession = async () => {
-      try {
-        const response = await fetch("/api/auth/me", { credentials: "include" });
-        const data = await response.json();
-
-        if (!response.ok || !data.success) {
-          // Default mock user
-          setUser({ firstName: "Guest", lastName: "" });
-          return;
-        }
-
-        setUser(data.user);
-      } catch (error) {
-        setUser({ firstName: "Guest", lastName: "" });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSession();
-  }, [router]);
+  const { user, isAuthenticated } = useAppContext();
 
   return (
     <div className="min-h-screen bg-white font-sans text-black">
@@ -50,7 +24,7 @@ export default function AccountPage() {
         <div className="text-sm font-normal">
           Welcome!{" "}
           <span className="text-[#DB4444]">
-            {loading ? "..." : user?.firstName ? `${user.firstName} ${user.lastName || ""}` : "Guest "}
+            {user?.firstName ? `${user.firstName} ${user.lastName || ""}` : isAuthenticated ? "User" : "Guest"}
           </span>
         </div>
       </div>
@@ -59,7 +33,7 @@ export default function AccountPage() {
       <main className="mx-auto flex max-w-7xl gap-16 px-4 pb-20 sm:px-6 lg:px-20">
         <AccountSidebar />
         <div className="flex-1">
-          <ProfileForm user={user} />
+         <AccountProfileForm />
         </div>
       </main>
 

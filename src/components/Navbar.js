@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Search, Heart, ShoppingCart, User, Menu, X, ShoppingBag, XCircle, Star, LogOut } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { useAppContext } from "../context/AppContext";
 
 const baseNavLinks = [
   { label: "Home", href: "/" },
@@ -17,83 +18,10 @@ const baseNavLinks = [
 export default function Navbar({ searchValue = "", onSearchChange }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null);
-  const [cartCount, setCartCount] = useState(0);
   const pathname = usePathname();
   const router = useRouter();
   const menuRef = useRef(null);
-
-  useEffect(() => {
-    const fetchSession = async () => {
-      try {
-        const response = await fetch("/api/auth/me", { credentials: "include" });
-        const data = await response.json();
-        if (response.ok && data?.success && data.user) {
-          setIsAuthenticated(true);
-          const fullName = [data.user.firstName, data.user.lastName].filter(Boolean).join(" ") || data.user.name || "User";
-          setUser({ ...data.user, fullName });
-        } else {
-          setIsAuthenticated(false);
-          setUser(null);
-        }
-      } catch (error) {
-        setIsAuthenticated(false);
-        setUser(null);
-      }
-    };
-
-    fetchSession();
-  }, [pathname]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const fetchCartCount = async () => {
-      try {
-        const response = await fetch("/api/cart", { credentials: "include" });
-        const data = await response.json();
-
-        if (!isMounted || !response.ok) {
-          setCartCount(0);
-          return;
-        }
-
-        const items = data?.cart?.items || [];
-        const totalItems = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
-        setCartCount(totalItems);
-      } catch (error) {
-        if (isMounted) setCartCount(0);
-      }
-    };
-
-    fetchCartCount();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [pathname, isAuthenticated]);
-
-  useEffect(() => {
-    const handleCartUpdated = () => {
-      fetch("/api/cart", { credentials: "include" })
-        .then((response) => response.json())
-        .then((data) => {
-          const items = data?.cart?.items || [];
-          const totalItems = items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
-          setCartCount(totalItems);
-        })
-        .catch(() => {
-          setCartCount(0);
-        });
-    };
-
-    window.addEventListener("cart:updated", handleCartUpdated);
-
-    return () => {
-      window.removeEventListener("cart:updated", handleCartUpdated);
-    };
-  }, []);
+  const { isAuthenticated, user, cartCount, wishlistCount, logout } = useAppContext();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -107,13 +35,14 @@ export default function Navbar({ searchValue = "", onSearchChange }) {
   }, []);
 
   const navLinks = baseNavLinks;
+  const dashboardPath = user?.role === "admin" ? "/dashboard/admin" : user?.role === "seller" ? "/dashboard/seller" : "/dashboard/customer";
+  const dashboardOrdersPath = user?.role === "admin" ? "/dashboard/admin/orders" : user?.role === "seller" ? "/dashboard/seller/orders" : "/dashboard/customer/orders";
+  const dashboardComplaintsPath = user?.role === "admin" ? "/dashboard/admin/complaints" : user?.role === "seller" ? "/dashboard/seller/complaints" : "/dashboard/customer/complaints";
+  const dashboardReviewsPath = user?.role === "admin" ? "/dashboard/admin/reviews" : user?.role === "seller" ? "/dashboard/seller/reviews" : "/dashboard/customer/reviews";
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-      setIsAuthenticated(false);
-      setUser(null);
-      setCartCount(0);
+      await logout();
       setAccountMenuOpen(false);
       router.push("/login");
       router.refresh();
@@ -162,16 +91,17 @@ export default function Navbar({ searchValue = "", onSearchChange }) {
           </div>
 
           {/* Action Icons */}
-          <Link href="/wishlist" aria-label="Wishlist" className="transition-opacity hover:opacity-80">
+          <Link href="/wishlist" aria-label="Wishlist" className="relative transition-opacity hover:opacity-80">
             <Heart className="h-6 w-6 fill-transparent text-black transition-colors duration-200 hover:fill-red-500 hover:text-red-500" />
+            <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#DB4444] px-1 text-[10px] font-semibold text-white">
+              {wishlistCount > 99 ? "99+" : wishlistCount}
+            </span>
           </Link>
           <Link href="/cart" aria-label="Cart" className="relative transition-opacity hover:opacity-80">
             <ShoppingCart className="h-6 w-6 text-black transition-colors duration-200 hover:text-red-500" />
-            {cartCount > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#DB4444] px-1 text-[10px] font-semibold text-white">
-                {cartCount > 99 ? "99+" : cartCount}
-              </span>
-            )}
+            <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#DB4444] px-1 text-[10px] font-semibold text-white">
+              {cartCount > 99 ? "99+" : cartCount}
+            </span>
           </Link>
 
           {isAuthenticated ? (
@@ -212,24 +142,24 @@ export default function Navbar({ searchValue = "", onSearchChange }) {
                       <span>Manage My Account</span>
                     </Link>
 
-                     <Link href="/dashboard/customer/overview" onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-3 transition-opacity hover:opacity-80">
+                    <Link href={dashboardPath} onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-3 transition-opacity hover:opacity-80">
                       <ShoppingBag className="h-5 w-5" />
-                      <span>My Overview</span>
+                      <span>{user?.role === "admin" ? "Admin Dashboard" : user?.role === "seller" ? "Seller Dashboard" : "Customer Dashboard"}</span>
                     </Link>
 
-                    <Link href="/dashboard/customer/orders" onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-3 transition-opacity hover:opacity-80">
+                    <Link href={dashboardOrdersPath} onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-3 transition-opacity hover:opacity-80">
                       <ShoppingBag className="h-5 w-5" />
-                      <span>My Order</span>
+                      <span>{user?.role === "admin" ? "Orders" : user?.role === "seller" ? "My Orders" : "My Orders"}</span>
                     </Link>
 
-                    <Link href="/dashboard/customer/complaints" onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-3 transition-opacity hover:opacity-80">
+                    <Link href={dashboardComplaintsPath} onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-3 transition-opacity hover:opacity-80">
                       <XCircle className="h-5 w-5" />
-                      <span>My Complaints</span>
+                      <span>{user?.role === "admin" ? "Complaints" : "My Complaints"}</span>
                     </Link>
 
-                    <Link href="/dashboard/customer/reviews" onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-3 transition-opacity hover:opacity-80">
+                    <Link href={dashboardReviewsPath} onClick={() => setAccountMenuOpen(false)} className="flex items-center gap-3 transition-opacity hover:opacity-80">
                       <Star className="h-5 w-5" />
-                      <span>My Reviews</span>
+                      <span>{user?.role === "admin" ? "Reviews" : "My Reviews"}</span>
                     </Link>
 
                     <button

@@ -1,10 +1,38 @@
 "use client";
 
 import { Phone, Mail } from "lucide-react";
+import { useState } from "react";
+import { showModal } from "../lib/modal";
 
 export default function ContactSection() {
-  const handleSubmit = (e) => {
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
+  const [isSending, setIsSending] = useState(false);
+
+  const handleChange = (e) => {
+    setForm((current) => ({ ...current, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSending(true);
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.error || "Unable to send your message.");
+
+      await showModal({ variant: "success", title: "Message sent", message: "We will get back to you within 24 hours." });
+      setForm({ name: "", email: "", phone: "", message: "" });
+    } catch (error) {
+      await showModal({ title: "Message failed", message: error.message });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
@@ -61,6 +89,9 @@ export default function ContactSection() {
             <div className="relative">
               <input
                 type="text"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
                 required
                 placeholder="Your Name *"
                 className="w-full rounded bg-[#F5F5F5] px-4 py-3.5 text-sm font-normal text-black outline-none placeholder:text-black/50"
@@ -69,6 +100,9 @@ export default function ContactSection() {
             <div className="relative">
               <input
                 type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
                 required
                 placeholder="Your Email *"
                 className="w-full rounded bg-[#F5F5F5] px-4 py-3.5 text-sm font-normal text-black outline-none placeholder:text-black/50"
@@ -77,6 +111,9 @@ export default function ContactSection() {
             <div className="relative">
               <input
                 type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
                 required
                 placeholder="Your Phone *"
                 className="w-full rounded bg-[#F5F5F5] px-4 py-3.5 text-sm font-normal text-black outline-none placeholder:text-black/50"
@@ -86,6 +123,10 @@ export default function ContactSection() {
 
           {/* Message Textarea */}
           <textarea
+            name="message"
+            value={form.message}
+            onChange={handleChange}
+            required
             placeholder="Your Massage"
             rows={7}
             className="w-full resize-none rounded bg-[#F5F5F5] p-4 text-sm font-normal text-black outline-none placeholder:text-black/50"
@@ -95,9 +136,11 @@ export default function ContactSection() {
           <div className="flex justify-end">
             <button
               type="submit"
+              disabled={isSending}
+              aria-busy={isSending}
               className="rounded bg-[#DB4444] px-12 py-4 text-base font-medium text-white transition-colors duration-200 hover:bg-[#e03a3a] active:scale-95"
             >
-              Send Massage
+              {isSending ? "Sending..." : "Send Message"}
             </button>
           </div>
         </form>

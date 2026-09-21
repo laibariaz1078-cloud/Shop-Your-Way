@@ -9,8 +9,26 @@ export default function OrderSummary({ items = [], billingDetails = {} }) {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [status, setStatus] = useState("");
   const [confirmedOrder, setConfirmedOrder] = useState(null);
+  const [showStripeConfirm, setShowStripeConfirm] = useState(false);
   const router = useRouter();
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  const startStripeCheckout = async () => {
+    setStatus("Redirecting to Stripe...");
+    try {
+      const response = await fetch("/api/stripe/checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ billingDetails }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Unable to start Stripe checkout");
+      window.location.href = data.url;
+    } catch (error) {
+      setStatus(error.message);
+      setShowStripeConfirm(false);
+    }
+  };
 
   const placeOrder = async () => {
     const requiredFields = ["firstName", "streetAddress", "city", "phone", "email"];
@@ -18,20 +36,14 @@ export default function OrderSummary({ items = [], billingDetails = {} }) {
       setStatus("Please complete all required billing details.");
       return;
     }
+    if (paymentMethod === "stripe") {
+      setShowStripeConfirm(true);
+      setStatus("");
+      return;
+    }
+
     setStatus("Placing order...");
     try {
-      if (paymentMethod === "stripe") {
-        const response = await fetch("/api/stripe/checkout-session", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ billingDetails }),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || "Unable to start Stripe checkout");
-        window.location.href = data.url;
-        return;
-      }
-
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,6 +55,7 @@ export default function OrderSummary({ items = [], billingDetails = {} }) {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Unable to place order");
+      window.dispatchEvent(new CustomEvent("cart:updated"));
       setStatus("");
       setConfirmedOrder(data.order);
     } catch (error) {
@@ -139,6 +152,24 @@ export default function OrderSummary({ items = [], billingDetails = {} }) {
         </button>
         {status && <p className="mt-3 text-sm text-slate-600">{status}</p>}
       </div>
+
+      {showStripeConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-xl">
+            <h2 className="text-2xl font-bold text-black">Continue to Stripe?</h2>
+            <p className="mt-3 text-base text-slate-700">You selected Stripe as your payment method. You will be redirected to Stripe to complete your payment securely.</p>
+            <p className="mt-4 text-sm text-slate-600">Order total: <span className="font-semibold text-black">${subtotal}</span></p>
+            <div className="mt-6 flex gap-3">
+              <button type="button" onClick={() => setShowStripeConfirm(false)} className="flex-1 rounded border border-slate-300 px-4 py-3 text-base font-medium text-slate-700 transition-colors hover:bg-slate-50">
+                Cancel
+              </button>
+              <button type="button" onClick={startStripeCheckout} className="flex-1 rounded bg-[#DB4444] px-4 py-3 text-base font-medium text-white transition-opacity hover:opacity-90">
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirmedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">

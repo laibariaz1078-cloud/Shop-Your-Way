@@ -14,16 +14,11 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 ## Stripe setup
 
 Add these values to `.env.local` before using Stripe checkout:
 
-```env
-
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
 
 Use Stripe test-mode keys while developing. Customers are redirected to Stripe Checkout for card payment; card details are never sent to this application.
 

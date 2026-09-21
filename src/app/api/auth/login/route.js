@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import dbConnect from "../../../../lib/dbConnect";
 import User from "../../../../models/User";
 import { comparePassword, signToken, setAuthCookie } from "../../../../lib/auth";
-import { verifyRecaptchaToken } from "../../../../lib/recaptcha";
+import { shouldBypassRecaptcha, verifyRecaptchaToken } from "../../../../lib/recaptcha";
 
 export async function POST(request) {
   try {
     const { email, identifier, password, captchaToken } = await request.json();
 
-    if (captchaToken) {
+    if (!shouldBypassRecaptcha() && captchaToken) {
+      await verifyRecaptchaToken(captchaToken);
+    }
+
+    if (!shouldBypassRecaptcha() && !captchaToken) {
       await verifyRecaptchaToken(captchaToken);
     }
 
