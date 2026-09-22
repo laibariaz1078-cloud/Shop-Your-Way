@@ -23,12 +23,8 @@ export function AppProvider({ children }) {
         return true;
       }
 
-      setIsAuthenticated(false);
-      setUser(null);
       return false;
     } catch (error) {
-      setIsAuthenticated(false);
-      setUser(null);
       return false;
     }
   }, []);

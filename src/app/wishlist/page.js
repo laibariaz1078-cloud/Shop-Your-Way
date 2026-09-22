@@ -5,6 +5,7 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import WishlistGrid from "../../components/WishlistGrid";
 import ProductCard from "../../components/ProductCard";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { getBuyerOnlyMessage, isBuyerRole } from "../../lib/permissions";
@@ -16,6 +17,7 @@ export default function WishlistPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [pendingAddToCartId, setPendingAddToCartId] = useState(null);
   const [addedProductIds, setAddedProductIds] = useState([]);
+  const router = useRouter();
   const { refreshWishlistItems, user } = useAppContext();
   const isRestrictedBuyerRole = !!user && !isBuyerRole(user.role);
 
@@ -52,6 +54,14 @@ export default function WishlistPage() {
   const handleAddToCartFromWishlist = async (product) => {
     const productId = product?.id || product?._id || product?.productId;
     if (!productId) return;
+
+    if (!user) {
+      setToastMessage("Please log in to add to cart");
+      window.setTimeout(() => {
+        router.push("/login");
+      }, 1200);
+      return;
+    }
 
     if (user && !isBuyerRole(user.role)) {
       await showModal({

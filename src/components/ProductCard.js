@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { Heart, Eye, Star } from "lucide-react";
 import { getProductImage } from "../lib/productImage";
 import { useAppContext } from "../context/AppContext";
@@ -41,6 +42,9 @@ export default function ProductCard({ product, onWishlistChange }) {
   const [cartPending, setCartPending] = useState(false);
   const [wishlistMessage, setWishlistMessage] = useState("");
   const [wishlistPending, setWishlistPending] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const toastTimerRef = useRef(null);
+  const router = useRouter();
   const { refreshCartCount, wishlistIds, toggleWishlistItem, user } = useAppContext();
   const productIdValue = String(productId || "");
   const contextWishlisted = productIdValue ? wishlistIds.includes(productIdValue) : false;
@@ -63,8 +67,28 @@ export default function ProductCard({ product, onWishlistChange }) {
     if (callback) callback();
   };
 
+  const showToast = (message, duration = 1800) => {
+    setToastMessage(message);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToastMessage(""), duration);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
   const handleWishlistToggle = async () => {
     if (!productIdValue || wishlistPending) return;
+
+    if (!user) {
+      showToast("Please log in to save wishlist");
+      window.setTimeout(() => {
+        router.push("/login");
+      }, 1200);
+      return;
+    }
 
     if (user && !isBuyerRole(user.role)) {
       await showModal({
@@ -86,11 +110,9 @@ export default function ProductCard({ product, onWishlistChange }) {
       onWishlistChange?.(productIdValue, nextState);
 
       if (nextState) {
-        await showModal({
-          variant: "success",
-          title: "Saved to wishlist",
-          message: `${name} has been added to your wishlist.`,
-        });
+        showToast("Saved to wishlist");
+      } else {
+        showToast("Removed from wishlist");
       }
 
       setTimeout(() => setWishlistMessage(""), 1600);
@@ -103,6 +125,14 @@ export default function ProductCard({ product, onWishlistChange }) {
   };
 
   const addProductToCart = async () => {
+    if (!user) {
+      showToast("Please log in to add to cart");
+      window.setTimeout(() => {
+        router.push("/login");
+      }, 1200);
+      return;
+    }
+
     if (user && !isBuyerRole(user.role)) {
       await showModal({
         title: "Buyer access required",
@@ -125,11 +155,7 @@ export default function ProductCard({ product, onWishlistChange }) {
       window.dispatchEvent(new CustomEvent("cart:updated"));
       await refreshCartCount();
       setCartMessage("Added");
-      await showModal({
-        variant: "success",
-        title: "Added to cart",
-        message: `${name} has been added to your cart.`,
-      });
+      showToast("Added to cart");
       setTimeout(() => setCartMessage(""), 1800);
     } catch (error) {
       setCartMessage(error.message);
@@ -219,6 +245,12 @@ export default function ProductCard({ product, onWishlistChange }) {
           )}
         </div>
       </Link>
+
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-[60] rounded-lg bg-[#DB4444] px-4 py-2 text-sm font-medium text-white shadow-lg">
+          {toastMessage}
+        </div>
+      )}
 
       <div className="mt-3 flex flex-col gap-1">
         <Link
