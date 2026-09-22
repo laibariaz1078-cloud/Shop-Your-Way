@@ -21,7 +21,15 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const { productId } = await request.json();
+    let body = {};
+
+    try {
+      body = await request.json();
+    } catch {
+      body = {};
+    }
+
+    const { productId } = body;
     const user = await getCurrentUser();
     if (user && !isBuyerRole(user.role)) {
       return NextResponse.json({ success: false, message: `Your account role is ${user.role}. Only buyers can save products to wishlist.` }, { status: 403 });
@@ -36,7 +44,7 @@ export async function POST(request) {
 export async function DELETE(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const productId = searchParams.get("productId");
+    const productId = searchParams.get("productId") || (await request.clone().json().catch(() => ({}))).productId;
     const user = await getCurrentUser();
     if (user && !isBuyerRole(user.role)) {
       return NextResponse.json({ success: false, message: `Your account role is ${user.role}. Only buyers can remove products from wishlist.` }, { status: 403 });

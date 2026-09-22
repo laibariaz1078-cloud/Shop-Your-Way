@@ -34,14 +34,6 @@ export default function ProductInfo({
   const handleBuyNow = async () => {
     if (!productId || buying) return;
 
-    if (!user) {
-      window.dispatchEvent(new CustomEvent("app:toast", { detail: { message: "Please log in to add to cart" } }));
-      window.setTimeout(() => {
-        router.push("/login");
-      }, 1200);
-      return;
-    }
-
     if (user && !isBuyerRole(user.role)) {
       await showModal({
         title: "Buyer access required",
@@ -54,6 +46,7 @@ export default function ProductInfo({
     try {
       const response = await fetch("/api/cart", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId, quantity, unitPrice: price, currency: "USD" }),
       });
@@ -70,14 +63,6 @@ export default function ProductInfo({
 
   const handleWishlistToggle = async () => {
     if (!productId || wishlistLoading) return;
-
-    if (!user) {
-      window.dispatchEvent(new CustomEvent("app:toast", { detail: { message: "Please log in to save wishlist" } }));
-      window.setTimeout(() => {
-        router.push("/login");
-      }, 1200);
-      return;
-    }
 
     if (user && !isBuyerRole(user.role)) {
       await showModal({

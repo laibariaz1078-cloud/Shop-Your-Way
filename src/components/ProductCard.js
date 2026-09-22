@@ -82,14 +82,6 @@ export default function ProductCard({ product, onWishlistChange }) {
   const handleWishlistToggle = async () => {
     if (!productIdValue || wishlistPending) return;
 
-    if (!user) {
-      showToast("Please log in to save wishlist");
-      window.setTimeout(() => {
-        router.push("/login");
-      }, 1200);
-      return;
-    }
-
     if (user && !isBuyerRole(user.role)) {
       await showModal({
         title: "Buyer access required",
@@ -125,14 +117,6 @@ export default function ProductCard({ product, onWishlistChange }) {
   };
 
   const addProductToCart = async () => {
-    if (!user) {
-      showToast("Please log in to add to cart");
-      window.setTimeout(() => {
-        router.push("/login");
-      }, 1200);
-      return;
-    }
-
     if (user && !isBuyerRole(user.role)) {
       await showModal({
         title: "Buyer access required",
@@ -145,8 +129,27 @@ export default function ProductCard({ product, onWishlistChange }) {
     setCartMessage("Adding...");
 
     try {
+      if (!user) {
+        const guestItems = JSON.parse(localStorage.getItem("guest_cart_items") || "[]");
+        const existingItem = guestItems.find((item) => String(item.productId) === String(productId));
+        const nextItems = existingItem
+          ? guestItems.map((item) => String(item.productId) === String(productId)
+              ? { ...item, quantity: Number(item.quantity || 0) + 1 }
+              : item)
+          : [...guestItems, { productId: String(productId), quantity: 1 }];
+
+        localStorage.setItem("guest_cart_items", JSON.stringify(nextItems));
+        window.dispatchEvent(new CustomEvent("cart:updated"));
+        await refreshCartCount();
+        setCartMessage("Added");
+        showToast("Added to cart");
+        setTimeout(() => setCartMessage(""), 1800);
+        return;
+      }
+
       const response = await fetch("/api/cart", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId, quantity: 1, unitPrice: product.basePrice ?? price }),
       });

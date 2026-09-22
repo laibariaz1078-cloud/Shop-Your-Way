@@ -35,8 +35,12 @@ export async function POST(request) {
 
     const sessionUserId = session.metadata?.userId ? String(session.metadata.userId) : "";
     const sessionUserEmail = session.metadata?.userEmail || session.customer_email || session.customer_details?.email || "";
+    const normalisedCurrentUserEmail = currentUser?.email ? String(currentUser.email).trim().toLowerCase() : "";
+    const normalisedSessionUserEmail = sessionUserEmail ? String(sessionUserEmail).trim().toLowerCase() : "";
+    const sameUserById = currentUser && sessionUserId && String(currentUser._id) === String(sessionUserId);
+    const sameUserByEmail = currentUser && normalisedCurrentUserEmail && normalisedCurrentUserEmail === normalisedSessionUserEmail;
 
-    if (currentUser && sessionUserId && String(currentUser._id) !== String(sessionUserId)) {
+    if (currentUser && sessionUserId && !sameUserById && !sameUserByEmail) {
       return NextResponse.json({ success: false, message: "This payment does not belong to your account." }, { status: 403 });
     }
 

@@ -3,6 +3,44 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 const AppContext = createContext(null);
+const GUEST_CART_KEY = "guest_cart_items";
+const GUEST_WISHLIST_KEY = "guest_wishlist_ids";
+
+function readGuestCartItems() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const stored = localStorage.getItem(GUEST_CART_KEY);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeGuestCartItems(items) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
+}
+
+function readGuestWishlistIds() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const stored = localStorage.getItem(GUEST_WISHLIST_KEY);
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeGuestWishlistIds(ids) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(GUEST_WISHLIST_KEY, JSON.stringify(ids.map(String)));
+}
 
 export function AppProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,8 +50,27 @@ export function AppProvider({ children }) {
   const [wishlistCount, setWishlistCount] = useState(0);
 
   const refreshSession = useCallback(async () => {
+    if (typeof document === "undefined") return false;
+
+    const hasAuthCookie = document.cookie
+      .split("; ")
+      .some((cookie) => cookie.startsWith("token=") || cookie.startsWith("session_token="));
+
+    if (!hasAuthCookie) {
+      setIsAuthenticated(false);
+      setUser(null);
+      return false;
+    }
+
     try {
       const response = await fetch("/api/auth/me", { credentials: "include" });
+
+      if (response.status === 401) {
+        setIsAuthenticated(false);
+        setUser(null);
+        return false;
+      }
+
       const data = await response.json();
 
       if (response.ok && data?.success && data.user) {
@@ -23,13 +80,24 @@ export function AppProvider({ children }) {
         return true;
       }
 
+      setIsAuthenticated(false);
+      setUser(null);
       return false;
     } catch (error) {
+      setIsAuthenticated(false);
+      setUser(null);
       return false;
     }
   }, []);
 
   const refreshCartCount = useCallback(async () => {
+    if (!isAuthenticated) {
+      const guestItems = readGuestCartItems();
+      const totalItems = guestItems.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0);
+      setCartCount(totalItems);
+      return totalItems;
+    }
+
     try {
       const response = await fetch("/api/cart", { credentials: "include" });
       const data = await response.json();
@@ -47,9 +115,16 @@ export function AppProvider({ children }) {
       setCartCount(0);
       return 0;
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const refreshWishlistItems = useCallback(async () => {
+    if (!isAuthenticated) {
+      const ids = readGuestWishlistIds();
+      setWishlistIds(ids);
+      setWishlistCount(ids.length);
+      return ids;
+    }
+
     try {
       const response = await fetch("/api/wishlist", { credentials: "include" });
       const data = await response.json();
@@ -72,7 +147,7 @@ export function AppProvider({ children }) {
       setWishlistCount(0);
       return [];
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const refreshWishlistCount = useCallback(async () => {
     const ids = await refreshWishlistItems();
@@ -86,13 +161,38 @@ export function AppProvider({ children }) {
       return false;
     }
 
+    if (!isAuthenticated) {
+      const currentIds = readGuestWishlistIds();
+      const nextIds = isCurrentlyWishlisted
+        ? currentIds.filter((id) => id !== normalizedId)
+        : [...new Set([...currentIds, normalizedId])];
+
+      writeGuestWishlistIds(nextIds);
+      setWishlistIds(nextIds);
+      setWishlistCount(nextIds.length);
+      window.dispatchEvent(new CustomEvent("wishlist:updated"));
+      return nextIds.includes(normalizedId);
+    }
+
     try {
-      const response = await fetch("/api/wishlist", {
-        method: isCurrentlyWishlisted ? "DELETE" : "POST",
-        credentials: "include",
-        headers: !isCurrentlyWishlisted ? { "Content-Type": "application/json" } : undefined,
-        body: !isCurrentlyWishlisted ? JSON.stringify({ productId: normalizedId }) : undefined,
-      });
+      let response;
+
+      if (isCurrentlyWishlisted) {
+        const url = new URL("/api/wishlist", window.location.origin);
+        url.searchParams.set("productId", normalizedId);
+
+        response = await fetch(url.toString(), {
+          method: "DELETE",
+          credentials: "include",
+        });
+      } else {
+        response = await fetch("/api/wishlist", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ productId: normalizedId }),
+        });
+      }
 
       const data = await response.json();
 
@@ -107,7 +207,7 @@ export function AppProvider({ children }) {
       console.error("Wishlist toggle failed", error);
       return isCurrentlyWishlisted;
     }
-  }, [refreshWishlistItems]);
+  }, [isAuthenticated, refreshWishlistItems]);
 
   const refreshAll = useCallback(async () => {
     await Promise.all([refreshSession(), refreshCartCount(), refreshWishlistItems()]);
@@ -121,9 +221,10 @@ export function AppProvider({ children }) {
     } finally {
       setIsAuthenticated(false);
       setUser(null);
-      setCartCount(0);
-      setWishlistIds([]);
-      setWishlistCount(0);
+      setCartCount(readGuestCartItems().reduce((sum, item) => sum + (Number(item.quantity) || 0), 0));
+      const guestIds = readGuestWishlistIds();
+      setWishlistIds(guestIds);
+      setWishlistCount(guestIds.length);
     }
   }, []);
 
@@ -138,9 +239,13 @@ export function AppProvider({ children }) {
   }, [refreshAll]);
 
   useEffect(() => {
-    const handleCartUpdated = () => refreshCartCount();
-    const handleWishlistUpdated = () => refreshWishlistItems();
-    const handleAuthUpdated = () => refreshSession();
+    const handleCartUpdated = () => void refreshCartCount();
+    const handleWishlistUpdated = () => void refreshWishlistItems();
+    const handleAuthUpdated = async () => {
+      await refreshSession();
+      await refreshCartCount();
+      await refreshWishlistItems();
+    };
 
     window.addEventListener("cart:updated", handleCartUpdated);
     window.addEventListener("wishlist:updated", handleWishlistUpdated);
