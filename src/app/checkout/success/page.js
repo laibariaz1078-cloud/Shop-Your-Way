@@ -20,6 +20,7 @@ export default function CheckoutSuccessPage() {
 
     fetch("/api/stripe/checkout-session/complete", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId }),
     })

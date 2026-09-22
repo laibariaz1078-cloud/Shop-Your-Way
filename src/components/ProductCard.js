@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Heart, Eye, Star } from "lucide-react";
+import { Heart, Eye, Star, ShoppingCart } from "lucide-react";
 import { getProductImage } from "../lib/productImage";
 import { useAppContext } from "../context/AppContext";
 import { isBuyerRole, getBuyerOnlyMessage } from "../lib/permissions";

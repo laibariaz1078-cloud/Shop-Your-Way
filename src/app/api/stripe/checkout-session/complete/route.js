@@ -28,7 +28,7 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: "Invalid Stripe checkout session." }, { status: 400 });
     }
 
-    const paymentCompleted = session.payment_status === "paid" || session.status === "complete" || Number(session.amount_total || 0) > 0;
+    const paymentCompleted = ["paid", "complete"].includes(session.payment_status) || session.status === "complete" || Number(session.amount_total || 0) > 0;
     if (!paymentCompleted) {
       return NextResponse.json({ success: false, message: "Payment has not been completed." }, { status: 400 });
     }
@@ -36,7 +36,7 @@ export async function POST(request) {
     const sessionUserId = session.metadata?.userId ? String(session.metadata.userId) : "";
     const sessionUserEmail = session.metadata?.userEmail || session.customer_email || session.customer_details?.email || "";
 
-    if (currentUser && sessionUserId && currentUser._id.toString() !== sessionUserId) {
+    if (currentUser && sessionUserId && String(currentUser._id) !== String(sessionUserId)) {
       return NextResponse.json({ success: false, message: "This payment does not belong to your account." }, { status: 403 });
     }
 
@@ -65,7 +65,13 @@ export async function POST(request) {
       }
     }
 
-    const billingDetails = JSON.parse(session.metadata?.billingDetails || "{}");
+    const billingDetails = (() => {
+      try {
+        return JSON.parse(session.metadata?.billingDetails || "{}") || {};
+      } catch (error) {
+        return {};
+      }
+    })();
     const customerName = `${user.firstName} ${user.lastName || ""}`.trim();
     let order = null;
 

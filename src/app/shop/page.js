@@ -41,18 +41,41 @@ const fallbackCatalog = Object.entries(fallbackProductsByCategory)
   .flatMap(([category, categoryProducts]) => categoryProducts.map((product) => ({
     ...product,
     category,
-    addToCartVisible: false,
+    addToCartVisible: true,
     collection: "explore",
   })));
+
+const normalizeCategoryMatchValue = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 const matchesFilters = (product, selectedCategory, searchTerm) => {
   const normalizedCategory = selectedCategory || "all";
   const normalizedSearch = searchTerm.trim().toLowerCase();
+  const categoryCandidates = [
+    product.category,
+    product.categorySlug,
+    product.categoryId,
+    product.categoryName,
+    product.categoryIds,
+    product.category_id,
+  ].flatMap((value) => {
+    if (Array.isArray(value)) return value;
+    return [value];
+  });
 
-  return (
-    (normalizedCategory === "all" || product.category === normalizedCategory) &&
-    (!normalizedSearch || product.name.toLowerCase().includes(normalizedSearch))
-  );
+  const categoryMatches =
+    normalizedCategory === "all" ||
+    categoryCandidates.some((candidate) => {
+      const value = normalizeCategoryMatchValue(candidate);
+      if (!value) return false;
+      return value === normalizedCategory || normalizeCategoryMatchValue(product.name).includes(normalizedCategory) || value.includes(normalizedCategory);
+    });
+
+  return categoryMatches && (!normalizedSearch || product.name.toLowerCase().includes(normalizedSearch));
 };
 
 export default function ShopPage() {
