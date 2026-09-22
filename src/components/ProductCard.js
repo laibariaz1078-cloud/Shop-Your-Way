@@ -232,7 +232,7 @@ export default function ProductCard({ product, onWishlistChange }) {
               disabled={isRestrictedBuyerRole || cartPending}
               className="absolute inset-x-0 bottom-0 z-20 flex h-9 w-full items-center justify-center bg-black text-xs font-medium text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 disabled:cursor-not-allowed disabled:bg-slate-400 disabled:opacity-100"
             >
-              <ShoppingCart className="h-4 w-4" />
+              <ShoppingCart className="h-4 w-4 mr-1" />
               {cartPending ? "Adding..." : cartMessage || "Add To Cart"}
             </button>
           )}
