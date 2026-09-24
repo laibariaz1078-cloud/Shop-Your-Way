@@ -16,6 +16,8 @@ export default function WishlistGrid({ products = [], onRemove, onAddToCart, add
     <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
       {products.map((product) => {
         const productId = String(product.id || product._id || product.productId || "");
+        const image = product.image || product.images?.[0]?.url || "/product1.png";
+        const price = product.price ?? product.basePrice ?? 0;
         const isAdded = productId ? addedProductIds.includes(productId) : false;
         const isPending = pendingProductId && String(pendingProductId) === productId;
 
@@ -38,14 +40,23 @@ export default function WishlistGrid({ products = [], onRemove, onAddToCart, add
               </button>
 
               <div className="relative h-[150px] w-[180px] transition-transform duration-300 group-hover:scale-105">
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 250px"
-                  className="object-contain drop-shadow-[0_8px_15px_rgba(0,0,0,0.1)]"
-                  priority
-                />
+                {String(image).startsWith("http") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={image}
+                    alt={product.name || "Wishlist product"}
+                    className="h-full w-full object-contain mix-blend-multiply drop-shadow-[0_8px_15px_rgba(0,0,0,0.1)]"
+                  />
+                ) : (
+                  <Image
+                    src={image}
+                    alt={product.name || "Wishlist product"}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 250px"
+                    className="object-contain mix-blend-multiply drop-shadow-[0_8px_15px_rgba(0,0,0,0.1)]"
+                    priority
+                  />
+                )}
               </div>
 
               <button
@@ -64,7 +75,7 @@ export default function WishlistGrid({ products = [], onRemove, onAddToCart, add
             <div className="mt-4 flex flex-col gap-2">
               <h3 className="truncate text-base font-medium text-black">{product.name}</h3>
               <div className="flex items-center gap-3 text-base font-medium">
-                <span className="text-[#DB4444]">${product.price}</span>
+                <span className="text-[#DB4444]">${price}</span>
                 {product.oldPrice > 0 && (
                   <span className="text-gray-400 line-through">${product.oldPrice}</span>
                 )}

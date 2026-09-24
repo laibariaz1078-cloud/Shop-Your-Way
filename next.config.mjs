@@ -24,6 +24,15 @@ const nextConfig = {
         protocol: "https",
         hostname: "upload.wikimedia.org",
       },
+      {
+        protocol: "https",
+        hostname: "pcbuilderqatar.com",
+        pathname: "/cdn/shop/files/**",
+      },
+      {
+        protocol: "https",
+        hostname: "**",
+      },
     ],
   },
 };

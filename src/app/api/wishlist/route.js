@@ -7,12 +7,17 @@ export async function GET() {
   try {
     const user = await getCurrentUser();
     const wishlist = await getWishlist(user._id);
-    const products = (wishlist?.items || []).map(({ productId }) => ({
-      ...productId,
-      id: String(productId._id),
-      image: productId.images?.[0]?.url || "",
-      price: productId.basePrice,
-    }));
+    const products = (wishlist?.items || [])
+      .map(({ productId }) => {
+        if (!productId?._id) return null;
+        return {
+          ...productId,
+          id: String(productId._id),
+          image: productId.images?.[0]?.url || "",
+          price: productId.basePrice ?? 0,
+        };
+      })
+      .filter(Boolean);
     return NextResponse.json({ success: true, wishlist: products });
   } catch (error) {
     return NextResponse.json({ success: true, wishlist: [] }, { status: 200 });

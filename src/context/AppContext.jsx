@@ -50,17 +50,7 @@ export function AppProvider({ children }) {
   const [wishlistCount, setWishlistCount] = useState(0);
 
   const refreshSession = useCallback(async () => {
-    if (typeof document === "undefined") return false;
-
-    const hasAuthCookie = document.cookie
-      .split("; ")
-      .some((cookie) => cookie.startsWith("token=") || cookie.startsWith("session_token="));
-
-    if (!hasAuthCookie) {
-      setIsAuthenticated(false);
-      setUser(null);
-      return false;
-    }
+    if (typeof window === "undefined") return false;
 
     try {
       const response = await fetch("/api/auth/me", { credentials: "include" });

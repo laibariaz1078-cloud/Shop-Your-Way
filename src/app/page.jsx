@@ -275,13 +275,11 @@ export default function HomePage() {
           <div className="flex flex-col gap-4 sm:gap-5">
             <SectionBadge label="Categories" />
 
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-semibold tracking-wider text-black sm:text-3xl">
-                Browse By Category
-              </h2>
+            {/* <div className="flex items-center justify-between gap-3"> */}
+             
 
-              <NavArrows prevLabel="Previous category" nextLabel="Next category" />
-            </div>
+              {/* <NavArrows prevLabel="Previous category" nextLabel="Next category" /> */}
+            {/* </div> */}
           </div>
 
           <CategoryTabs />

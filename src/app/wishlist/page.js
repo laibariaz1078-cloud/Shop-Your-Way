@@ -8,6 +8,7 @@ import ProductCard from "../../components/ProductCard";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
+import { flashSaleProducts, bestSellingProducts, exploreProducts } from "../home-data";
 import { getBuyerOnlyMessage, isBuyerRole } from "../../lib/permissions";
 import { showModal } from "../../lib/modal";
 
@@ -18,11 +19,50 @@ export default function WishlistPage() {
   const [pendingAddToCartId, setPendingAddToCartId] = useState(null);
   const [addedProductIds, setAddedProductIds] = useState([]);
   const router = useRouter();
-  const { refreshWishlistItems, user } = useAppContext();
+  const { refreshCartCount, refreshWishlistItems, user } = useAppContext();
   const isRestrictedBuyerRole = !!user && !isBuyerRole(user.role);
+
+  const getGuestWishlistIds = () => {
+    if (typeof window === "undefined") return [];
+
+    try {
+      const stored = localStorage.getItem("guest_wishlist_ids");
+      if (!stored) return [];
+      const parsed = JSON.parse(stored);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  };
 
   const loadWishlistItems = async () => {
     try {
+      if (!user) {
+        const ids = getGuestWishlistIds();
+        if (!ids.length) {
+          setWishlistItems([]);
+          return;
+        }
+
+        const response = await fetch("/api/products?limit=100");
+        const data = await response.json();
+        const products = Array.isArray(data?.products) ? data.products : [];
+        const catalog = [...flashSaleProducts, ...bestSellingProducts, ...exploreProducts];
+        const productSources = [...products, ...catalog];
+        const mappedItems = ids
+          .map((id) => productSources.find((product) => String(product._id || product.id) === id))
+          .filter(Boolean)
+          .map((product) => ({
+            ...product,
+            id: String(product._id || product.id),
+            image: product.image || product.images?.[0]?.url || "",
+            price: product.basePrice ?? product.price ?? 0,
+          }));
+
+        setWishlistItems(mappedItems);
+        return;
+      }
+
       const response = await fetch("/api/wishlist", { credentials: "include" });
       const data = await response.json();
       setWishlistItems(data.success ? data.wishlist : []);
@@ -33,6 +73,15 @@ export default function WishlistPage() {
 
   const handleRemoveWishlistItem = async (productId) => {
     try {
+      if (!user) {
+        const ids = getGuestWishlistIds();
+        const nextIds = ids.filter((id) => String(id) !== String(productId));
+        localStorage.setItem("guest_wishlist_ids", JSON.stringify(nextIds));
+        setWishlistItems((prevItems) => prevItems.filter((item) => String(item.id) !== String(productId)));
+        window.dispatchEvent(new CustomEvent("wishlist:updated"));
+        return;
+      }
+
       const response = await fetch(`/api/wishlist?productId=${productId}`, {
         method: "DELETE",
         credentials: "include",
@@ -55,14 +104,6 @@ export default function WishlistPage() {
     const productId = product?.id || product?._id || product?.productId;
     if (!productId) return;
 
-    if (!user) {
-      setToastMessage("Please log in to add to cart");
-      window.setTimeout(() => {
-        router.push("/login");
-      }, 1200);
-      return;
-    }
-
     if (user && !isBuyerRole(user.role)) {
       await showModal({
         title: "Buyer access required",
@@ -76,6 +117,24 @@ export default function WishlistPage() {
     setAddedProductIds((prev) => (prev.includes(normalizedProductId) ? prev : [...prev, normalizedProductId]));
 
     try {
+      if (!user) {
+        const guestItems = JSON.parse(localStorage.getItem("guest_cart_items") || "[]");
+        const existingItem = guestItems.find((item) => String(item.productId) === normalizedProductId);
+        const nextItems = existingItem
+          ? guestItems.map((item) => String(item.productId) === normalizedProductId ? { ...item, quantity: Number(item.quantity || 0) + 1 } : item)
+          : [...guestItems, { productId: normalizedProductId, quantity: 1 }];
+
+        localStorage.setItem("guest_cart_items", JSON.stringify(nextItems));
+        await refreshCartCount();
+        setToastMessage("Added to cart");
+        window.dispatchEvent(new CustomEvent("cart:updated"));
+        window.setTimeout(() => {
+          setToastMessage("");
+          setAddedProductIds((prev) => prev.filter((id) => String(id) !== normalizedProductId));
+        }, 1700);
+        return;
+      }
+
       const response = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

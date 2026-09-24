@@ -13,6 +13,12 @@ const categoryDefinitions = [
   { slug: "baby", name: "Baby's & Toys" },
   { slug: "groceries", name: "Groceries & Pets" },
   { slug: "beauty", name: "Health & Beauty" },
+  { slug: "phones", name: "Phones" },
+  { slug: "computers", name: "Computers" },
+  { slug: "smartwatch", name: "SmartWatch" },
+  { slug: "camera", name: "Camera" },
+  { slug: "headphones", name: "HeadPhones" },
+  { slug: "gaming", name: "Gaming" },
 ];
 
 export default function CategorySidebar({ selectedCategory = "all", onSelectCategory }) {

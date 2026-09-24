@@ -12,28 +12,28 @@ import CategorySidebar from "../../components/CategorySidebar";
 
 const fallbackProductsByCategory = {
   phones: [
-    { id: "fallback-phone-1", name: "Nova Pro Smartphone", image: "/6.png", price: 799, rating: 5, reviewCount: 42 },
-    { id: "fallback-phone-2", name: "Everyday 5G Phone", image: "/7.png", price: 499, rating: 4, reviewCount: 28 },
+    { id: "fallback-phone-1", name: "Classic Bomber Jacket", image: "/1.png", price: 799, rating: 5, reviewCount: 42 },
+    { id: "fallback-phone-2", name: "Pro Wireless Gamepad", image: "/2.png", price: 499, rating: 4, reviewCount: 28 },
   ],
   computers: [
-    { id: "fallback-computer-1", name: "UltraView Desktop Monitor", image: "/4.png", price: 370, rating: 5, reviewCount: 36 },
-    { id: "fallback-computer-2", name: "Performance Work Laptop", image: "/7.png", price: 1200, rating: 5, reviewCount: 51 },
+    { id: "fallback-computer-1", name: "Cesar Dog Food", image: "/5.png", price: 370, rating: 5, reviewCount: 36 },
+    { id: "fallback-computer-2", name: "S-Series Comfort Chair", image: "/10.png", price: 1200, rating: 5, reviewCount: 51 },
   ],
   smartwatch: [
-    { id: "fallback-watch-1", name: "Active Fit SmartWatch", image: "/8.png", price: 229, rating: 4, reviewCount: 31 },
-    { id: "fallback-watch-2", name: "Classic Health Watch", image: "/9.png", price: 179, rating: 4, reviewCount: 24 },
+    { id: "fallback-watch-1", name: "Classic Bomber Jacket", image: "/1.png", price: 229, rating: 4, reviewCount: 31 },
+    { id: "fallback-watch-2", name: "Pro Wireless Gamepad", image: "/2.png", price: 179, rating: 4, reviewCount: 24 },
   ],
   camera: [
-    { id: "fallback-camera-1", name: "CANON EOS DSLR Camera", image: "/6.png", price: 360, rating: 5, reviewCount: 95 },
-    { id: "fallback-camera-2", name: "Pocket Creator Camera", image: "/5.png", price: 289, rating: 4, reviewCount: 19 },
+    { id: "fallback-camera-1", name: "Cesar Dog Food", image: "/5.png", price: 360, rating: 5, reviewCount: 95 },
+    { id: "fallback-camera-2", name: "S-Series Comfort Chair", image: "/10.png", price: 289, rating: 4, reviewCount: 19 },
   ],
   headphones: [
-    { id: "fallback-headphones-1", name: "Noise Cancel Headphones", image: "/11.png", price: 149, rating: 5, reviewCount: 63 },
-    { id: "fallback-headphones-2", name: "Studio Wireless Headset", image: "/13.png", price: 119, rating: 4, reviewCount: 38 },
+    { id: "fallback-headphones-1", name: "Classic Bomber Jacket", image: "/1.png", price: 149, rating: 5, reviewCount: 63 },
+    { id: "fallback-headphones-2", name: "Pro Wireless Gamepad", image: "/2.png", price: 119, rating: 4, reviewCount: 38 },
   ],
   gaming: [
-    { id: "fallback-gaming-1", name: "GP11 Shooter USB Gamepad", image: "/11.png", price: 660, rating: 5, reviewCount: 55 },
-    { id: "fallback-gaming-2", name: "Gaming Setup Essentials", image: "/13.png", price: 899, rating: 5, reviewCount: 47 },
+    { id: "fallback-gaming-1", name: "Pro Wireless Gamepad", image: "/2.png", price: 660, rating: 5, reviewCount: 55 },
+    { id: "fallback-gaming-2", name: "Cesar Dog Food", image: "/5.png", price: 899, rating: 5, reviewCount: 47 },
   ],
 };
 

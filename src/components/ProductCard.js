@@ -38,6 +38,7 @@ export default function ProductCard({ product, onWishlistChange }) {
 
   const [isLiked, setIsLiked] = useState(isWishlisted);
   const [isHeartHovered, setIsHeartHovered] = useState(false);
+  const [selectedColor, setSelectedColor] = useState(() => colors?.[0] || null);
   const [cartMessage, setCartMessage] = useState("");
   const [cartPending, setCartPending] = useState(false);
   const [wishlistMessage, setWishlistMessage] = useState("");
@@ -60,6 +61,7 @@ export default function ProductCard({ product, onWishlistChange }) {
       image.startsWith("/"))
       ? image
       : "/product1.png";
+  const activeColor = colors?.includes(selectedColor) ? selectedColor : colors?.[0] || null;
 
   const handleActionClick = (e, callback) => {
     e.preventDefault();
@@ -224,7 +226,7 @@ export default function ProductCard({ product, onWishlistChange }) {
               alt={name}
               fill
               sizes="(max-width: 640px) 50vw, 250px"
-              className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+              className="object-contain p-2 mix-blend-multiply transition-transform duration-300 group-hover:scale-105"
             />
           </div>
 
@@ -292,9 +294,19 @@ export default function ProductCard({ product, onWishlistChange }) {
         {colors && colors.length > 0 && (
           <div className="flex items-center gap-1.5 pt-1">
             {colors.map((color, idx) => (
-              <span
+              <button
                 key={idx}
-                className="h-4 w-4 rounded-full border border-black p-[2px] cursor-pointer"
+                type="button"
+                aria-label={`Select color ${color}`}
+                title={color}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setSelectedColor(color);
+                }}
+                className={`h-4 w-4 rounded-full border border-black p-[2px] transition-all ${
+                  activeColor === color ? "ring-2 ring-[#DB4444] ring-offset-1" : ""
+                }`}
                 style={{ backgroundColor: color }}
               />
             ))}

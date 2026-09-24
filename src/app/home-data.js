@@ -11,7 +11,7 @@ export const flashSaleProducts = [
     reviewCount: 88,
     addToCartVisible: true,
   },
-  
+
   {
     id: "ak900-keyboard",
     name: "AK-900 Wired Keyboard",
@@ -49,8 +49,8 @@ export const flashSaleProducts = [
 
 export const bestSellingProducts = [
   {
-    id: "north-coat",
-    name: "The North Coat",
+    id: "classic-bomber-jacket",
+    name: "Classic Bomber Jacket",
     category: "women",
     image: "/1.png",
     price: 260,
@@ -59,8 +59,8 @@ export const bestSellingProducts = [
     reviewCount: 65,
   },
   {
-    id: "gucci-bag",
-    name: "Gucci Duffle Bag",
+    id: "pro-gamepad",
+    name: "Pro Wireless Gamepad",
     category: "men",
     image: "/2.png",
     price: 960,
@@ -69,20 +69,20 @@ export const bestSellingProducts = [
     reviewCount: 65,
   },
   {
-    id: "cpu-cooler",
-    name: "RGB Liquid CPU Cooler",
-    category: "electronics",
-    image: "/1.png",
+    id: "cesar-dog-food",
+    name: "Cesar Dog Food",
+    category: "groceries",
+    image: "/5.png",
     price: 160,
     oldPrice: 170,
     rating: 5,
     reviewCount: 65,
   },
   {
-    id: "bookshelf",
-    name: "Small Bookshelf",
+    id: "comfort-chair",
+    name: "S-Series Comfort Chair",
     category: "home",
-    image: "/4.png",
+    image: "/10.png",
     price: 360,
     rating: 5,
     reviewCount: 65,
@@ -113,7 +113,7 @@ export const exploreProducts = [
     id: "gaming-laptop",
     name: "ASUS FHD Gaming Laptop",
     category: "electronics",
-    image: "/7.png",
+    image: "/4.png",
     price: 700,
     rating: 5,
     reviewCount: 325,
@@ -141,7 +141,7 @@ export const exploreProducts = [
     id: "soccer-cleats-2",
     name: "Jr. Zoom Pro Cleats",
     category: "sports",
-    image: "/10.png",
+    image: "/9.png",
     price: 1160,
     rating: 5,
     reviewCount: 35,
