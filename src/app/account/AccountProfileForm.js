@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { useAppContext } from "../../context/AppContext";
-import ChangePasswordModal from "./ChangePasswordModal";
+import ChangePasswordModal from "./ChangePasswordModal"; // for User Icon
 
 export default function AccountProfileForm() {
-  const { user, refreshSession } = useAppContext();
+  const { user, refreshSession } = useAppContext(); // user ke liye session ko refresh karne ke liye useAppContext se user aur refreshSession ko destructure kiya gaya hai
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -34,7 +34,7 @@ export default function AccountProfileForm() {
     try {
       const response = await fetch("/api/account", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" }, //extra information meta info 
         credentials: "include",
         body: JSON.stringify({ firstName: firstNameValue, lastName: lastNameValue, email: emailValue }),
       });
@@ -78,7 +78,7 @@ export default function AccountProfileForm() {
               type="text"
               value={firstNameValue}
               onChange={(event) => setFirstName(event.target.value)}
-              disabled={loading}
+              disabled={loading} // bg mein data load hn ra hn tu loading state mein disable kr do
               className="rounded-sm bg-gray-100 px-4 py-3 text-sm outline-none transition-colors focus:bg-gray-50"
             />
           </div>
@@ -116,7 +116,7 @@ export default function AccountProfileForm() {
           </button>
         </div>
 
-        {error && (
+        {error && ( // conditional and chaining 
           <div className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
@@ -156,3 +156,8 @@ export default function AccountProfileForm() {
     </div>
   );
 }
+
+// Destruction of user and refreshSession from useAppContext is done to access the current user's information and to refresh the session after updating the profile. The component manages state for form fields, loading, error, and success messages, and handles form submission to update the user's profile via an API call. It also includes a modal for changing the password.
+//credentials mein omit keh koi cookie na bhejo 
+// same-origin agr api aur website ek hi server hn tu bhejo 
+// include hr haal mein bhejo 

@@ -24,7 +24,7 @@ export async function GET(request) {
     );
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin; //protocol + domain + port
   const redirectUri = new URL("/api/auth/google/callback", appUrl).toString();
 
   try {
@@ -65,8 +65,8 @@ export async function GET(request) {
     let user = existingUser;
     if (!user) {
       user = await User.create({
-        firstName: profile.given_name || "Google",
-        lastName: profile.family_name || "User",
+        firstName: profile.firstName || "Google",
+        lastName: profile.lastName || "User",
         email: profile.email.toLowerCase(),
         password: "oauth-user",
         role: "customer",
@@ -74,7 +74,7 @@ export async function GET(request) {
       });
     }
 
-    const nextResponse = NextResponse.redirect(new URL("/dashboard/customer", appUrl));
+    const nextResponse = NextResponse.redirect(new URL("/", appUrl));
     const token = signToken({ id: user._id.toString(), role: user.role });
 
     return setAuthCookie(nextResponse, token);

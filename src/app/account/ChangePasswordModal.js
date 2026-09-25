@@ -65,7 +65,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
 
       setSuccess("Password changed successfully");
       setCurrentPassword("");
-      setNewPassword("");
+      setNewPassword(""); // state mein new password na rahein isliye khali karon 
       setConfirmPassword("");
       setLoading(false);
 
@@ -122,7 +122,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
                 type="button"
                 onClick={() => setShowCurrent(!showCurrent)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"
-                tabIndex={-1}
+                tabIndex={-1} // focus sirf real inputs aur buttons par jata hai
               >
                 {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -142,7 +142,7 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
               />
               <button
                 type="button"
-                onClick={() => setShowNew(!showNew)}
+                onClick={() => setShowNew(!showNew)} // yeh toggle state jasia hnta hn
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black"
                 tabIndex={-1}
               >

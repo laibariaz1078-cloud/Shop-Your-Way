@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { consumeVerifiedReset, findUserByEmailOrPhone } from "../../../../controllers/authController";
 import { hashPassword } from "../../../../lib/auth";
 import { connectToDatabase } from "../../../../lib/mongodb";
-import User from "../../../../models/User";
+
 
 export async function POST(request) {
   try {

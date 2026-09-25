@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server"; //api routes middleware ke sath use hga, extension of WRA, manipulate ongoing res
 import { getAuthUser, hashPassword, comparePassword } from "../../../../lib/auth";
 import dbConnect from "../../../../lib/dbConnect";
 import User from "../../../../models/User";
